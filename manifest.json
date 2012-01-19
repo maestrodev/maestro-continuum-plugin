@@ -1,0 +1,34 @@
+[{ 
+  "name" : "continuum",
+  "description" : "Run A Continuum Build Definition<br>[project] Project Name <br>[project_group] Project Group <br>[timeout] Seconds To Wait For Build To Start<br>[goals] Maven Goals In A Build Definition<br>[arguments] Maven Arguments In A Build Definition<br>[host] Hostname Of The Server Running Continuum<br>[port] Port Number Continuum Is Bound To<br>[username] Continuum User For Building<br>[password] Password For User<br>[web_path] Context Location Of Continuum (/continuum)",
+  "author": "Kit Plummer",
+  "version": "1.0",
+  "class": "com.maestrodev.IrcWorker",
+  "type":"java",
+  "dependencies":[
+    {
+        "name":"maestro-continuum-plugin-1.0-SNAPSHOT.jar"
+    },
+    {
+        "name":"pom.xml"
+    }
+  ],
+  "task":{
+    "command" : "/continuum/build",    
+    "inputs" : {"project" : {"value" : "", "type" : "String", "required" : true},
+		"project_group":{"value" : "", "type" : "String", "required" : false},
+		"goals":{"value" : "", "type" : "String", "required" : true},
+		"arguments":{"value" : "", "type" : "String", "required" : true},
+                "host":{"value" : "", "type" : "String", "required" : true},
+                "port":{"value" : 8080, "type" : "Integer", "required" : true},
+                "username":{"value" : "", "type" : "String", "required" : true},
+                "password":{"value" : "", "type" : "Password", "required" : false},
+		"timeout":{"value" : 120, "type" : "Integer", "required" : true},
+		"web_path":{"value" : "", "type" : "String", "required" : true}															
+	},
+    "outputs" : {},
+    "tool_name":"Build"
+  }
+}]
+
+      
