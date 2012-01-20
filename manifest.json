@@ -16,13 +16,13 @@
   "task":{
     "command" : "/continuum/build",    
     "inputs" : {"project" : {"value" : "", "type" : "String", "required" : true},
-		"project_group":{"value" : "", "type" : "String", "required" : false},
+		"project_group":{"value" : "", "type" : "String", "required" : true},
 		"goals":{"value" : "", "type" : "String", "required" : true},
 		"arguments":{"value" : "", "type" : "String", "required" : true},
-                "host":{"value" : "", "type" : "String", "required" : true},
-                "port":{"value" : 8080, "type" : "Integer", "required" : true},
-                "username":{"value" : "", "type" : "String", "required" : true},
-                "password":{"value" : "", "type" : "Password", "required" : false},
+        "host":{"value" : "", "type" : "String", "required" : true},
+        "port":{"value" : 8080, "type" : "Integer", "required" : true},
+        "username":{"value" : "", "type" : "String", "required" : true},
+        "password":{"value" : "", "type" : "Password", "required" : false},
 		"timeout":{"value" : 120, "type" : "Integer", "required" : true},
 		"web_path":{"value" : "", "type" : "String", "required" : true}															
 	},
