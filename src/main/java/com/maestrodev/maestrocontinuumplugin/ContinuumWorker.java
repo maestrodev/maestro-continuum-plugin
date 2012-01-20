@@ -26,10 +26,10 @@ public class ContinuumWorker extends MaestroWorker
     }
     
     
-    @Override
-    public void writeOutput(String string){
-        System.out.print(string);
-    }
+//    @Override
+//    public void writeOutput(String string){
+//        System.out.print(string);
+//    }
     
     private ProjectGroup getProjectGroup(String projectGroupName) throws Exception{
         List<ProjectGroup> projectGroups = client.getAllProjectGroupsWithAllDetails();
