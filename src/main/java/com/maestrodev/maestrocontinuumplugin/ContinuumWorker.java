@@ -121,7 +121,7 @@ public class ContinuumWorker extends MaestroWorker
         String output = "";
         String runningTotal = "";
         while( "Updating".equals( client.getProjectStatusAsString( result.getState() ) ) ||
-                "Building".equals( client.getProjectStatusAsString( result.getState() ) ) ){
+               "Building".equals( client.getProjectStatusAsString( result.getState() ) ) ){
             String newOutput = client.getBuildOutput(project.getId(), result.getId());
             output = newOutput.replace(runningTotal, "");
             runningTotal += output;
@@ -130,14 +130,14 @@ public class ContinuumWorker extends MaestroWorker
             result = client.getLatestBuildResult( project.getId() );
         }
         
-        String newOutput = client.getBuildOutput(project.getId(), result.getId());
+        result = client.getLatestBuildResult( project.getId() );
         
+        String newOutput = client.getBuildOutput(project.getId(), result.getId());
         
         output = newOutput.replace(runningTotal, "");
         
         writeOutput(output);
 
-        
         if(result.getExitCode() != 0)
             throw new Exception("Result Returned Not Success");
     }
