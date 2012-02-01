@@ -3,14 +3,18 @@ package com.maestrodev.maestrocontinuumplugin;
 import com.maestrodev.MaestroWorker;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
+import org.apache.maven.continuum.xmlrpc.project.BuildAgentConfiguration;
+import org.apache.maven.continuum.xmlrpc.project.BuildAgentGroupConfiguration;
 import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
 import org.apache.maven.continuum.xmlrpc.project.BuildResult;
 import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
 import org.apache.maven.continuum.xmlrpc.project.Project;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroup;
 import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
+import org.apache.maven.continuum.xmlrpc.system.Profile;
 
 /**
  * Hello world!
@@ -24,6 +28,52 @@ public class ContinuumWorker extends MaestroWorker
     public ContinuumWorker(){
         super();
     }
+    
+    
+    private BuildAgentConfiguration getBuildAgent(String url) throws Exception {
+        List<BuildAgentConfiguration> buildAgents = client.getAllBuildAgents();
+        
+        for(BuildAgentConfiguration buildAgent: buildAgents){
+            if(buildAgent.getUrl().equals(url)){
+                return buildAgent;
+            }
+        }
+        
+        throw new Exception("Unable To Find Build Agent At " + url);
+    }
+    
+    private BuildAgentGroupConfiguration createBuildAgentGroup(String name, BuildAgentConfiguration buildAgentConfiguration) throws Exception{
+        BuildAgentGroupConfiguration buildAgentGroupConfiguration = new BuildAgentGroupConfiguration();
+        buildAgentGroupConfiguration.setName(name + " (" + buildAgentConfiguration.getUrl() + ")");
+                
+        buildAgentGroupConfiguration.addBuildAgent(buildAgentConfiguration);
+        
+        return client.addBuildAgentGroup(buildAgentGroupConfiguration);
+    }
+    
+    private Profile createProfile(String name, String buildAgentGroupName) throws Exception{
+        Profile profile = new Profile();
+        
+        profile.setBuildAgentGroup(buildAgentGroupName);
+        profile.setActive(true);
+        profile.setName(name);
+        
+        profile = client.addProfile(profile);
+        
+        return profile;
+    }
+    
+    
+    private Profile findProfile(String name) throws Exception{
+        try{
+            return client.getProfileWithName(name);
+        }catch(Exception e){
+            writeOutput("Unable To Locate Profile With Name " + name);
+        }
+        
+        return null;
+    }
+    
     
     private ProjectGroup getProjectGroup(String projectGroupName) throws Exception{
         List<ProjectGroup> projectGroups = client.getAllProjectGroupsWithAllDetails();
@@ -49,13 +99,22 @@ public class ContinuumWorker extends MaestroWorker
         throw new Exception("Unable To Find Project " + projectName);
     }
     
-    private BuildDefinition getBuildDefinitionFromProject(String goals, String arguments, Project project) throws Exception {
+    
+    
+    private BuildDefinition getBuildDefinitionFromProject(String goals, String arguments, Project project, Profile profile) throws Exception {
         List<BuildDefinition> buildDefinitions = project.getBuildDefinitions();
         
         for(BuildDefinition buildDefinition : buildDefinitions){
             if(buildDefinition.getGoals().equals(goals) &&
-                    buildDefinition.getArguments().equals(arguments))
-                return buildDefinition;
+                    buildDefinition.getArguments().equals(arguments)){
+                
+                if(profile == null)
+                    return buildDefinition;
+                
+                if(buildDefinition.getProfile() != null && 
+                        buildDefinition.getProfile().getName().equals(profile.getName()))
+                    return buildDefinition;
+            }
         }
         
         this.writeOutput("Unable To Detect Build Definition Creation Will Begin\n");
@@ -69,6 +128,11 @@ public class ContinuumWorker extends MaestroWorker
         buildDefinition.setBuildFile("pom.xml");
         buildDefinition.setType("maven2");
         
+        if(profile != null){
+            buildDefinition.setProfile(profile);
+        }
+        
+        
         buildDefinition.setSchedule(client.getSchedule(1));
         
         try {
@@ -79,7 +143,7 @@ public class ContinuumWorker extends MaestroWorker
         }
     }
     
-    public Project triggerBuild(Project project, BuildDefinition buildDefinition) throws Exception{
+    private Project triggerBuild(Project project, BuildDefinition buildDefinition) throws Exception{
         int buildNumber = project.getBuildNumber();
         int buildId = project.getLatestBuildId();
         
@@ -166,9 +230,26 @@ public class ContinuumWorker extends MaestroWorker
             String goals = this.getField("goals");
             String arguments = this.getField("arguments");
             
+     
+
+            Profile profile = null;
+            if(Boolean.getBoolean(getField("use_agent_facts")) || getField("use_agent_facts").equals("true")){
+                try{
+                    writeOutput("Using Agent Facts To Locate Continuum Build Agent\n");
+                    profile = findProfile(getField("composition"));
+                    if(profile == null){
+                        Map facts = (Map)(getFields().get("facts"));
+                        BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
+                        profile = this.createProfile(getField("composition"), this.createBuildAgentGroup(getField("composition"), buildAgent).getName());
+                    }
+                }catch(Exception e){
+                    throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment" + e.getMessage());
+                }
+            }
+            
             this.writeOutput("Searching For Build Definition With Goals " + goals+ "\n");
             this.writeOutput("And Arguements " + arguments+ "\n");
-            BuildDefinition buildDefinition = this.getBuildDefinitionFromProject(goals, arguments, project);
+            BuildDefinition buildDefinition = this.getBuildDefinitionFromProject(goals, arguments, project, profile);
             this.writeOutput("Retrieved Build Definition " + buildDefinition.getId()+ "\n");
             
             this.writeOutput("Triggering Build " + goals + "\n");
@@ -177,7 +258,6 @@ public class ContinuumWorker extends MaestroWorker
             
             waitForBuild(project);
         }catch(Exception e){
-            writeOutput("Continuum Build Failed: " + e.getMessage());
             this.setError("Continuum Build Failed: " + e.getMessage());   
         }
     }
