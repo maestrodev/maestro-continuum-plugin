@@ -25,7 +25,8 @@
         "password":{"value" : "", "type" : "Password", "required" : false},
 		"timeout":{"value" : 120, "type" : "Integer", "required" : true},
 		"web_path":{"value" : "", "type" : "String", "required" : true},
-		"use_agent_facts":{"value" : "", "type":"Boolean", "required" : true}													
+		"use_agent_facts":{"value" : "", "type":"Boolean", "required" : true},
+		"agent_facts":{"value" : "", "type":"String", "required" : false}
 	},
     "outputs" : {},
     "tool_name":"Build"

@@ -35,6 +35,13 @@ public class ContinuumWorker extends MaestroWorker
         
         for(BuildAgentConfiguration buildAgent: buildAgents){
             if(buildAgent.getUrl().equals(url)){
+                writeOutput("Making Sure Agent Is Enabled\n");
+                buildAgent.setEnabled(true);
+                client.updateBuildAgent(buildAgent);
+                if(!buildAgent.isEnabled()){
+                    throw new Exception("Build Agent " + buildAgent.getUrl() + 
+                            " Is Currently Not Enabled");
+                }
                 return buildAgent;
             }
         }
@@ -145,7 +152,7 @@ public class ContinuumWorker extends MaestroWorker
     
     private Project triggerBuild(Project project, BuildDefinition buildDefinition) throws Exception{
         int buildNumber = project.getBuildNumber();
-        int buildId = project.getLatestBuildId();
+//        int buildId = project.getLatestBuildId();
         
         BuildTrigger buildTrigger = new BuildTrigger();
         buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
@@ -159,17 +166,15 @@ public class ContinuumWorker extends MaestroWorker
         int timeout = Integer.parseInt(this.getField("timeout")) * 1000;
         long start = System.currentTimeMillis();
 
-        while(buildId == project.getLatestBuildId()){
+        while(!client.getProjectStatusAsString(project.getState()).equals("Building")){
             if(System.currentTimeMillis() - start >  timeout){
                 throw new Exception("Failed To Detect Build Start After " + (timeout/1000) + " Seconds");
             }
             
-            
-            
             this.writeOutput("Waiting For Build To Start "+ 
                     client.getProjectStatusAsString(project.getState()) +
                     " Last Build Number " + buildNumber + "\n");
-            Thread.sleep(10000);
+            Thread.sleep(1000);
             
             project = client.getProjectWithAllDetails(project.getId());
             
@@ -233,13 +238,13 @@ public class ContinuumWorker extends MaestroWorker
      
 
             Profile profile = null;
-            if(Boolean.getBoolean(getField("use_agent_facts")) || getField("use_agent_facts").equals("true")){
+            if(getField("use_agent_facts") != null && getField("use_agent_facts").equals("true")){
                 try{
                     writeOutput("Using Agent Facts To Locate Continuum Build Agent\n");
                     profile = findProfile(getField("composition"));
+                    Map facts = (Map)(getFields().get("facts"));
+                    BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
                     if(profile == null){
-                        Map facts = (Map)(getFields().get("facts"));
-                        BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
                         profile = this.createProfile(getField("composition"), this.createBuildAgentGroup(getField("composition"), buildAgent).getName());
                     }
                 }catch(Exception e){
