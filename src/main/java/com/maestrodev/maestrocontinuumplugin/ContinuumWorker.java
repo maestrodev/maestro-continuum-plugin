@@ -30,6 +30,10 @@ public class ContinuumWorker extends MaestroWorker
     }
     
     
+    private void puts(String string){
+        System.out.println(string);
+    }
+    
     private BuildAgentConfiguration getBuildAgent(String url) throws Exception {
         List<BuildAgentConfiguration> buildAgents = client.getAllBuildAgents();
         
@@ -186,27 +190,28 @@ public class ContinuumWorker extends MaestroWorker
     }
             
     private void waitForBuild(Project project) throws Exception {
-        BuildResult result = client.getLatestBuildResult( project.getId() );
+        project = client.getProjectWithAllDetails( project.getId() );
         String output = "";
         String runningTotal = "";
-        while( "Updating".equals( client.getProjectStatusAsString( result.getState() ) ) ||
-               "Building".equals( client.getProjectStatusAsString( result.getState() ) ) ){
-            String newOutput = client.getBuildOutput(project.getId(), result.getId());
+        while( "Updating".equals( client.getProjectStatusAsString( project.getState() ) ) ||
+               "Building".equals( client.getProjectStatusAsString( project.getState() ) ) ){
+            String newOutput = client.getBuildOutput(project.getId(), project.getLatestBuildId());
             output = newOutput.replace(runningTotal, "");
             runningTotal += output;
             writeOutput(output);
             Thread.sleep(5000);
-            result = client.getLatestBuildResult( project.getId() );
+            project = client.getProjectWithAllDetails( project.getId() );
         }
         
-        result = client.getLatestBuildResult( project.getId() );
+        project = client.getProjectWithAllDetails( project.getId() );
         
-        String newOutput = client.getBuildOutput(project.getId(), result.getId());
+        String newOutput = client.getBuildOutput(project.getId(), project.getLatestBuildId());
         
         output = newOutput.replace(runningTotal, "");
         
         writeOutput(output);
 
+        BuildResult result = client.getBuildResult(project.getId(), project.getLatestBuildId());
         if(result.getExitCode() != 0)
             throw new Exception("Result Returned Not Success");
     }
