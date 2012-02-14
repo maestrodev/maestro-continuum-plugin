@@ -160,7 +160,7 @@ public class ContinuumWorker extends MaestroWorker
         
         BuildTrigger buildTrigger = new BuildTrigger();
         buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
-        buildTrigger.setTriggeredBy("Maestro4");
+        buildTrigger.setTriggeredBy(this.getField("username"));
         try {
             client.buildProject(project.getId(), buildDefinition.getId(), buildTrigger);
         } catch (Exception ex) {
@@ -170,14 +170,15 @@ public class ContinuumWorker extends MaestroWorker
         int timeout = Integer.parseInt(this.getField("timeout")) * 1000;
         long start = System.currentTimeMillis();
 
+        this.writeOutput("Waiting For Build To Start "+ 
+                    client.getProjectStatusAsString(project.getState()) +
+                    " Previous Build Number " + buildNumber + "\n");
+        
         while(!client.getProjectStatusAsString(project.getState()).equals("Building")){
             if(System.currentTimeMillis() - start >  timeout){
                 throw new Exception("Failed To Detect Build Start After " + (timeout/1000) + " Seconds");
             }
             
-            this.writeOutput("Waiting For Build To Start "+ 
-                    client.getProjectStatusAsString(project.getState()) +
-                    " Last Build Number " + buildNumber + "\n");
             Thread.sleep(1000);
             
             project = client.getProjectWithAllDetails(project.getId());
@@ -195,10 +196,11 @@ public class ContinuumWorker extends MaestroWorker
         String runningTotal = "";
         while( "Updating".equals( client.getProjectStatusAsString( project.getState() ) ) ||
                "Building".equals( client.getProjectStatusAsString( project.getState() ) ) ){
-            String newOutput = client.getBuildOutput(project.getId(), project.getLatestBuildId());
-            output = newOutput.replace(runningTotal, "");
-            runningTotal += output;
-            writeOutput(output);
+//            String newOutput = client.getBuildOutput(project.getId(), project.getLatestBuildId());
+//            output = newOutput.replace(runningTotal, "");
+//            runningTotal += output;
+//            writeOutput(output);
+//            puts(output);
             Thread.sleep(5000);
             project = client.getProjectWithAllDetails( project.getId() );
         }
@@ -210,7 +212,7 @@ public class ContinuumWorker extends MaestroWorker
         output = newOutput.replace(runningTotal, "");
         
         writeOutput(output);
-
+puts(output);
         BuildResult result = client.getBuildResult(project.getId(), project.getLatestBuildId());
         if(result.getExitCode() != 0)
             throw new Exception("Result Returned Not Success");
