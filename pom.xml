@@ -58,6 +58,26 @@
   
   <build>
     <plugins>
+        <plugin>
+            <groupId>com.google.code.maven-replacer-plugin</groupId>
+            <artifactId>maven-replacer-plugin</artifactId>
+            <version>1.4.1</version>
+            <executions>                
+                <execution>
+                    <phase>prepare-package</phase>
+                    <goals>
+                        <goal>replace</goal>
+                    </goals>                    
+                </execution>
+            </executions>
+            <configuration>
+                <file>src/main/resources/manifest.json.mv</file>
+                <outputFile>manifest.json</outputFile>
+                <regex>false</regex>
+                <token>$VERSION$</token>
+                <value>${project.version}</value>
+            </configuration>
+        </plugin>
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <version>2.5</version>
@@ -70,7 +90,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${basedir}/maestro-continuum-plugin-${project.version}-bin/src</outputDirectory>
+              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/src</outputDirectory>
               <resources>          
                 <resource>
                   <directory>src</directory>
@@ -86,7 +106,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${basedir}/maestro-continuum-plugin-${project.version}-bin/jars</outputDirectory>
+              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/jars</outputDirectory>
               <resources>
                 <resource>
                   <directory>${basedir}/target/</directory>
@@ -103,7 +123,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${basedir}/maestro-continuum-plugin-${project.version}-bin/lib</outputDirectory>
+              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/lib</outputDirectory>
               <resources>
                 <resource>
                   <directory>lib</directory>
@@ -119,7 +139,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${basedir}/maestro-continuum-plugin-${project.version}-bin/config</outputDirectory>
+              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/config</outputDirectory>
               <resources>
                 <resource>
                   <directory>config</directory>
@@ -135,7 +155,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${basedir}/maestro-continuum-plugin-${project.version}-bin</outputDirectory>
+              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin</outputDirectory>
               <resources>
                 <resource>
                   <directory>${basedir}</directory>
@@ -168,6 +188,24 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>2.4.1</version>
+        <configuration>
+        <filesets>
+            <fileset>
+            <directory>${basedir}</directory>
+            <includes>
+                <include>
+                    manifest.json
+                </include>
+            </includes>
+            <followSymlinks>false</followSymlinks>
+            </fileset>
+            
+        </filesets>
+        </configuration>
+    </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>

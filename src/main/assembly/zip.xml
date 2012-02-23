@@ -9,7 +9,7 @@
     <fileSets>
         <fileSet>
             <outputDirectory>/</outputDirectory>
-            <directory>maestro-continuum-plugin-${project.version}-bin</directory>
+            <directory>target/scratch/maestro-continuum-plugin-${project.version}-bin</directory>
         </fileSet>
     </fileSets>
 </assembly>

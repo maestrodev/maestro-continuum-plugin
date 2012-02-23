@@ -7,7 +7,7 @@
   "type":"java",
   "dependencies":[
     {
-        "name":"maestro-continuum-plugin-1.1-SNAPSHOT.jar"
+        "name":"maestro-continuum-plugin-$VERSION$.jar"
     },
     {
         "name":"pom.xml"
