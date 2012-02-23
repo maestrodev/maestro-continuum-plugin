@@ -2,7 +2,7 @@
   "name" : "continuum",
   "description" : "Run A Continuum Build Definition<br>[project] Project Name <br>[project_group] Project Group <br>[timeout] Seconds To Wait For Build To Start<br>[goals] Maven Goals In A Build Definition<br>[arguments] Maven Arguments In A Build Definition<br>[host] Hostname Of The Server Running Continuum<br>[port] Port Number Continuum Is Bound To<br>[username] Continuum User For Building<br>[password] Password For User<br>[web_path] Context Location Of Continuum (/continuum)",
   "author": "Kelly Plummer",
-  "version": "1.1",
+  "version": "1.2-SNAPSHOT",
   "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
   "type":"java",
   "dependencies":[
