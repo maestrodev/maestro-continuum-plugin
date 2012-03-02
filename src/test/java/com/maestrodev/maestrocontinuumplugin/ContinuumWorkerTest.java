@@ -65,7 +65,7 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
         
-        assertNotNull(continuumWorker.getField("__context_outputs__"));
+//        assertNotNull(continuumWorker.getField("__context_outputs__"));
         assertNull(continuumWorker.getField("__error__"),continuumWorker.getField("__error__"));
     }
    
@@ -102,7 +102,7 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
         
-        assertNotNull(continuumWorker.getField("__context_outputs__"));
+//        assertNotNull(continuumWorker.getField("__context_outputs__"));
         assertNull(continuumWorker.getField("__error__"),continuumWorker.getField("__error__"));
     }
    
@@ -140,7 +140,7 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
         
-        assertNotNull(continuumWorker.getField("__context_outputs__"));
+//        assertNotNull(continuumWorker.getField("__context_outputs__"));
         assertNull(continuumWorker.getField("__error__"),continuumWorker.getField("__error__"));
     }
    
