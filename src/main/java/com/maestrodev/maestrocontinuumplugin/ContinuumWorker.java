@@ -51,7 +51,21 @@ public class ContinuumWorker extends MaestroWorker
             }
         }
         
-        throw new Exception("Unable To Find Build Agent At " + url);
+        BuildAgentConfiguration buildAgentConfiguration = new BuildAgentConfiguration();
+        
+        buildAgentConfiguration.setDescription("Maestro Configured Build Agent (" + url + ")");
+        buildAgentConfiguration.setEnabled(true);
+        buildAgentConfiguration.setUrl(url);
+        
+        
+        buildAgentConfiguration = client.addBuildAgent(buildAgentConfiguration);
+        
+        
+        if(!buildAgentConfiguration.isEnabled()){
+            throw new Exception("Unable To Find Build Agent At " + url);
+        }
+        
+        return buildAgentConfiguration;
     }
     
     private BuildAgentGroupConfiguration createBuildAgentGroup(String name, BuildAgentConfiguration buildAgentConfiguration) throws Exception{
