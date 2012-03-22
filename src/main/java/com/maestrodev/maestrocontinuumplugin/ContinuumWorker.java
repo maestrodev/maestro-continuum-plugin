@@ -218,7 +218,7 @@ public class ContinuumWorker extends MaestroWorker
         }
         
 //        this.writeOutput("Found New Build Number " + 
-                    project.getBuildNumber() + "\n");
+//                    project.getBuildNumber() + "\n");
         return project;
     }
             
