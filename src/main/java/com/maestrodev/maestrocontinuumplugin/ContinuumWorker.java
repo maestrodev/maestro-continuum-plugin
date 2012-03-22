@@ -212,12 +212,12 @@ public class ContinuumWorker extends MaestroWorker
             }
             
             Thread.sleep(1000);
-            writeOutput(client.getProjectStatusAsString(project.getState()) + "\n");
+//            writeOutput(client.getProjectStatusAsString(project.getState()) + "\n");
             project = client.getProjectWithAllDetails(project.getId());
             
         }
         
-        this.writeOutput("Found New Build Number " + 
+//        this.writeOutput("Found New Build Number " + 
                     project.getBuildNumber() + "\n");
         return project;
     }
@@ -244,7 +244,7 @@ public class ContinuumWorker extends MaestroWorker
         output = newOutput.replace(runningTotal, "");
         
         writeOutput(output);
-puts(output);
+//puts(output);
         BuildResult result = client.getBuildResult(project.getId(), project.getLatestBuildId());
         if(result.getExitCode() != 0)
             throw new Exception("Result Returned Not Success");
