@@ -282,8 +282,13 @@ public class ContinuumWorker extends MaestroWorker
                     profile = findProfile(getField("composition"));
                     Map facts = (Map)(getFields().get("facts"));
                     BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
+                    
                     if(profile == null){
                         profile = this.createProfile(getField("composition"), this.createBuildAgentGroup(getField("composition"), buildAgent).getName());
+                    } else {
+//                        verify build agent is in group
+                        BuildAgentGroupConfiguration buildAgentGroupConfiguration = client.getBuildAgentGroup(profile.getBuildAgentGroup());
+                        buildAgentGroupConfiguration.addBuildAgent(buildAgent);
                     }
                 }catch(Exception e){
                     throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment" + e.getMessage());
