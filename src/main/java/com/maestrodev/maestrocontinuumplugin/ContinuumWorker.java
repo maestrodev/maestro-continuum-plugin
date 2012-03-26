@@ -70,7 +70,7 @@ public class ContinuumWorker extends MaestroWorker
     
     private BuildAgentGroupConfiguration createBuildAgentGroup(String name, BuildAgentConfiguration buildAgentConfiguration) throws Exception{
         BuildAgentGroupConfiguration buildAgentGroupConfiguration = new BuildAgentGroupConfiguration();
-        buildAgentGroupConfiguration.setName(name + " (" + buildAgentConfiguration.getUrl() + ")");
+        buildAgentGroupConfiguration.setName(name);
                 
         buildAgentGroupConfiguration.addBuildAgent(buildAgentConfiguration);
         
@@ -284,11 +284,14 @@ public class ContinuumWorker extends MaestroWorker
                     BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
                     
                     if(profile == null){
+                        writeOutput("Build Environment Not Found, Created New ("+getField("composition")+")\n");
                         profile = this.createProfile(getField("composition"), this.createBuildAgentGroup(getField("composition"), buildAgent).getName());
                     } else {
 //                        verify build agent is in group
+                        writeOutput("Build Environment Found, Verifying Agent\n");
                         BuildAgentGroupConfiguration buildAgentGroupConfiguration = client.getBuildAgentGroup(profile.getBuildAgentGroup());
                         buildAgentGroupConfiguration.addBuildAgent(buildAgent);
+                        client.updateBuildAgentGroup(buildAgentGroupConfiguration);
                     }
                 }catch(Exception e){
                     throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment" + e.getMessage());
