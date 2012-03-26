@@ -290,8 +290,19 @@ public class ContinuumWorker extends MaestroWorker
 //                        verify build agent is in group
                         writeOutput("Build Environment Found, Verifying Agent\n");
                         BuildAgentGroupConfiguration buildAgentGroupConfiguration = client.getBuildAgentGroup(profile.getBuildAgentGroup());
-                        buildAgentGroupConfiguration.addBuildAgent(buildAgent);
-                        client.updateBuildAgentGroup(buildAgentGroupConfiguration);
+                        boolean found = false;
+                        
+                        for(BuildAgentConfiguration ba : buildAgentGroupConfiguration.getBuildAgents()){
+                            if(ba.getUrl().equals(buildAgent.getUrl())){
+                                found = true;
+                                break;
+                            }
+                        }
+                        
+                        if(!found){
+                            buildAgentGroupConfiguration.addBuildAgent(buildAgent);
+                            client.updateBuildAgentGroup(buildAgentGroupConfiguration);
+                        }
                     }
                 }catch(Exception e){
                     throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment" + e.getMessage());
