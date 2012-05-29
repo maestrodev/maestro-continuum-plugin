@@ -15,6 +15,11 @@
     <slf4j.version>1.5.8</slf4j.version>
   </properties>
 
+  <scm>
+    <developerConnection>scm:git:git@github.com:maestrodev/maestro-continuum-plugin.git</developerConnection>
+    <connection>scm:git:git@github.com:maestrodev/maestro-continuum-plugin.git</connection>
+  </scm>
+
   <distributionManagement>
     <repository>
       <id>maestro-deploy</id>
@@ -63,155 +68,17 @@
   </dependencies>
   
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <version>2.4</version>
-            <executions>
-            <execution>
-                <id>copy</id>
-                <phase>prepare-package</phase>
-                <goals>
-                <goal>copy-dependencies</goal>
-                </goals>
-                <configuration>
-                <outputDirectory>${basedir}/jars</outputDirectory>
-                <overWriteReleases>false</overWriteReleases>
-                <overWriteSnapshots>true</overWriteSnapshots>
-                <excludeTransitive>false</excludeTransitive>
-                </configuration>
-            </execution>
-            </executions>
-        </plugin>
-        <plugin>
-            <groupId>com.google.code.maven-replacer-plugin</groupId>
-            <artifactId>maven-replacer-plugin</artifactId>
-            <version>1.4.1</version>
-            <executions>                
-                <execution>
-                    <phase>prepare-package</phase>
-                    <goals>
-                        <goal>replace</goal>
-                    </goals>                    
-                </execution>
-            </executions>
-            <configuration>
-                <file>src/main/resources/manifest.json.mv</file>
-                <outputFile>manifest.json</outputFile>
-                <regex>false</regex>
-                <token>$VERSION$</token>
-                <value>${project.version}</value>
-            </configuration>
-        </plugin>
       <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>2.5</version>
-        <executions>
-          <execution>
-            <id>copy-source</id>
-            <!-- here the phase you need -->
-            <phase>package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/src</outputDirectory>
-              <resources>          
-                <resource>
-                  <directory>src</directory>
-                </resource>                
-              </resources>              
-            </configuration>            
-          </execution>
-          <execution>
-            <id>copy-jar</id>
-            <!-- here the phase you need -->
-            <phase>package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/jars</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${basedir}/target/</directory>
-                  <include>*.jar</include>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-jars</id>
-            <!-- here the phase you need -->
-            <phase>package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/jars</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${basedir}/jars/</directory>
-                  <include>*.jar</include>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib</id>
-            <!-- here the phase you need -->
-            <phase>package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/lib</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>lib</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-config</id>
-            <!-- here the phase you need -->
-            <phase>package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin/config</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>config</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-files</id>
-            <!-- here the phase you need -->
-            <phase>package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/scratch/maestro-continuum-plugin-${project.version}-bin</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${basedir}</directory>
-                  <include>Gemfile</include>
-                  <include>Gemfile.lock</include>
-                  <include>manifest.json</include>
-                  <include>README</include>
-                  <include>pom.xml</include>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.4</version>
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -223,84 +90,40 @@
         </configuration>
         <executions>
           <execution>
-            <id>make-assembly</id> <!-- this is used for inheritance merges -->
-            <phase>package</phase> <!-- append to the packaging phase. -->
+            <id>make-assembly</id>
+            <phase>package</phase>
             <goals>
-              <goal>single</goal> <!-- goals == mojos -->
+              <goal>single</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-clean-plugin</artifactId>
-        <version>2.4.1</version>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>1.1</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
-        <filesets>
-            <fileset>
-            <directory>${basedir}</directory>
-            <includes>
-                <include>
-                    manifest.json
-                </include>
-            </includes>
-            <followSymlinks>false</followSymlinks>
-            </fileset>
-            <fileset>
-            <directory>${basedir}/jars</directory>
-            <includes>
-                <include>
-                    **/*.jar
-                </include>
-            </includes>
-            <followSymlinks>false</followSymlinks>
-            </fileset>
-        </filesets>
-        </configuration>
-    </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <groupId>${project.groupId}</groupId>
-          <artifactId>${project.artifactId}</artifactId>
-          <version>${project.version}</version>
-          <url>${repository.url}</url>
-          <file>${basedir}/target/maestro-continuum-plugin-${project.version}-bin.zip</file>
-          <uniqueVersion>true</uniqueVersion>
-          <packaging>zip</packaging>
-          <repositoryId>maestro-deploy</repositoryId>
+          <shortRevisionLength>5</shortRevisionLength>
         </configuration>
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <version>1.0.1</version>
-            <executions>
-              <execution>
-                <id>enforce-no-snapshots</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-                <configuration>
-                  <rules>
-                    <requireReleaseVersion>
-                      <message>No Snapshots Allowed!</message>
-                    </requireReleaseVersion>
-                  </rules>
-                  <fail>true</fail>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-</project>
+  
+  <repositories>
+    <repository>
+      <id>maestrodev-snapshots</id>
+      <url>https://repo.maestrodev.com/archiva/repository/all/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+ </project>

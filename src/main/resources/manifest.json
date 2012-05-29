@@ -2,7 +2,7 @@
   "name" : "continuum",
   "description" : "Run A Continuum Build Definition<br>[project] Project Name <br>[project_group] Project Group <br>[timeout] Seconds To Wait For Build To Start<br>[goals] Maven Goals In A Build Definition<br>[arguments] Maven Arguments In A Build Definition<br>[host] Hostname Of The Server Running Continuum<br>[port] Port Number Continuum Is Bound To<br>[username] Continuum User For Building<br>[password] Password For User<br>[web_path] Context Location Of Continuum (/continuum)",
   "author": "Kelly Plummer",
-  "version": "1.2-SNAPSHOT",
+  "version": "${project.version}-${buildNumber}",
   "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
   "type":"java",
   "dependencies":[
@@ -29,7 +29,7 @@
         "name":"slf4j-api-1.5.8.jar",  
         "name":"slf4j-log4j12-1.5.8.jar",  
         "name":"stompjms-client-1.6.jar",  
-        "name":"ws-commons-util-1.0.2.jar",  
+        "name":"ws-commons-util-1.0.2.jar",   
         "name":"xml-apis-1.0.b2.jar",  
         "name":"xmlrpc-client-3.1.2.jar",  
         "name":"xmlrpc-common-3.1.2.jar",  
