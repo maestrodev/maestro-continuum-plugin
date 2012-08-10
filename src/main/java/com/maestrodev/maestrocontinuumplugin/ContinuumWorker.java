@@ -408,7 +408,7 @@ public class ContinuumWorker extends MaestroWorker
     
     private ProjectGroup createProjectGroup() throws Exception {
       ProjectGroupSummary projectGroup = new ProjectGroupSummary();
-      projectGroup.setDescription(getField("description"));
+      projectGroup.setDescription(getField("group_description"));
       projectGroup.setGroupId(getField("group_id"));
       projectGroup.setName(getField("group_name"));
       client.addProjectGroup(projectGroup);

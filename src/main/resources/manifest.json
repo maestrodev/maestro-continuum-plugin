@@ -1,12 +1,12 @@
 [{ 
-  "name" : "continuum",
-  "description" : "Run A Continuum Build Definition<br>[project] Project Name <br>[project_group] Project Group <br>[timeout] Seconds To Wait For Build To Start<br>[goals] Maven Goals In A Build Definition<br>[arguments] Maven Arguments In A Build Definition<br>[host] Hostname Of The Server Running Continuum<br>[port] Port Number Continuum Is Bound To<br>[username] Continuum User For Building<br>[password] Password For User<br>[web_path] Context Location Of Continuum (/continuum)",
-  "author": "Kelly Plummer",
-  "version": "${project.version}-${buildNumber}",
-  "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
-  "type":"java",
-  "dependencies":[
-    {
+    "name" : "continuum",
+    "description" : "Run A Continuum Build Definition<br>[project] Project Name <br>[project_group] Project Group <br>[timeout] Seconds To Wait For Build To Start<br>[goals] Maven Goals In A Build Definition<br>[arguments] Maven Arguments In A Build Definition<br>[host] Hostname Of The Server Running Continuum<br>[port] Port Number Continuum Is Bound To<br>[username] Continuum User For Building<br>[password] Password For User<br>[web_path] Context Location Of Continuum (/continuum)",
+    "author": "Kelly Plummer",
+    "version": "${project.version}-${buildNumber}",
+    "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
+    "type":"java",
+    "dependencies":[
+      {
         "name":"maestro-continuum-plugin-$VERSION$.jar",
         "name":"activemq-all-5.5.0.jar",  
         "name":"apollo-util-1.0-beta4.jar",  
@@ -35,26 +35,95 @@
         "name":"xmlrpc-common-3.1.2.jar",  
         "name":"xpp3_min-1.1.4c.jar",  
         "name":"xstream-1.3.1.jar"
-    }
-  ],
-  "task":{
-    "command" : "/continuum/build",    
-    "inputs" : {"project" : {"value" : "", "type" : "String", "required" : true},
-		"project_group":{"value" : "", "type" : "String", "required" : true},
-		"goals":{"value" : "", "type" : "String", "required" : true},
-		"arguments":{"value" : "", "type" : "String", "required" : true},
+      }
+    ],
+    "task":{
+      "command" : "/continuum/build",    
+      "inputs" : {"project" : {"value" : "", "type" : "String", "required" : true},
+        "project_group":{"value" : "", "type" : "String", "required" : true},
+        "goals":{"value" : "", "type" : "String", "required" : true},
+        "arguments":{"value" : "", "type" : "String", "required" : true},
         "host":{"value" : "", "type" : "String", "required" : true},
         "port":{"value" : 8080, "type" : "Integer", "required" : true},
         "username":{"value" : "", "type" : "String", "required" : true},
         "password":{"value" : "", "type" : "Password", "required" : false},
-		"timeout":{"value" : 120, "type" : "Integer", "required" : true},
-		"web_path":{"value" : "", "type" : "String", "required" : true},
-		"use_agent_facts":{"value" : "", "type":"Boolean", "required" : true},
-		"agent_facts":{"value" : "", "type":"String", "required" : false}
-	},
-    "outputs" : {},
-    "tool_name":"Build"
+        "timeout":{"value" : 120, "type" : "Integer", "required" : true},
+        "web_path":{"value" : "", "type" : "String", "required" : true},
+        "use_ssl":{"value" : false, "type" : "Boolean", "required" : true},
+        "use_agent_facts":{"value" : "", "type":"Boolean", "required" : true},
+        "agent_facts":{"value" : "", "type":"String", "required" : false}
+      },
+      "outputs" : {},
+      "tool_name":"Build"
+    }
+  },
+  { 
+    "name" : "continuum add shell project",
+    "description" : "",
+    "author": "Kelly Plummer",
+    "version": "${project.version}-${buildNumber}",
+    "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
+    "type":"java",
+    "dependencies":[
+      {
+        "name":"maestro-continuum-plugin-$VERSION$.jar"
+      }
+    ],
+    "task":{
+      "command" : "/continuum/addShellProject",    
+      "inputs" : {
+        "project_name" : {"value" : "", "type" : "String", "required" : true},
+        "group_name":{"value" : "", "type" : "String", "required" : true},
+        "group_id":{"value" : "", "type" : "String", "required" : true},
+        "group_description":{"value" : "", "type" : "String", "required" : true},
+        "project_description":{"value" : "", "type" : "String", "required" : true},
+        "project_version":{"value" : "", "type" : "String", "required" : true},
+        "scm_url":{"value" : "", "type" : "String", "required" : true},
+        "scm_username":{"value" : "", "type" : "String", "required" : true},
+        "scm_password":{"value" : "", "type" : "Password", "required" : true},
+        "scm_use_cache":{"value" : false, "type" : "Boolean", "required" : true},
+        "scm_branch":{"value" : "", "type" : "String", "required" : true},
+        "host":{"value" : "", "type" : "String", "required" : true},
+        "port":{"value" : 8080, "type" : "Integer", "required" : true},
+        "username":{"value" : "", "type" : "String", "required" : true},
+        "password":{"value" : "", "type" : "Password", "required" : false},        
+        "web_path":{"value" : "", "type" : "String", "required" : true},
+        "use_ssl":{"value" : false, "type" : "Boolean", "required" : true}
+      },
+      "outputs" : {},
+      "tool_name":"Build"
+    }
+  },
+  { 
+    "name" : "continuum add maven project",
+    "description" : "",
+    "author": "Kelly Plummer",
+    "version": "${project.version}-${buildNumber}",
+    "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
+    "type":"java",
+    "dependencies":[
+      {
+        "name":"maestro-continuum-plugin-$VERSION$.jar"
+      }
+    ],
+    "task":{
+      "command" : "/continuum/addMavenProject",    
+      "inputs" : {"project" : {"value" : "", "type" : "String", "required" : true},
+        "group_name":{"value" : "", "type" : "String", "required" : true},
+        "group_id":{"value" : "", "type" : "String", "required" : true},
+        "group_description":{"value" : "", "type" : "String", "required" : true},
+        "pom_url":{"value" : "", "type" : "String", "required" : true},
+        "host":{"value" : "", "type" : "String", "required" : true},
+        "port":{"value" : 8080, "type" : "Integer", "required" : true},
+        "username":{"value" : "", "type" : "String", "required" : true},
+        "password":{"value" : "", "type" : "Password", "required" : false},        
+        "web_path":{"value" : "", "type" : "String", "required" : true},
+        "use_ssl":{"value" : false, "type" : "Boolean", "required" : true}
+      },
+      "outputs" : {},
+      "tool_name":"Build"
+    }
   }
-}]
+]
 
       
