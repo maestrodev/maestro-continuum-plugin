@@ -1,19 +1,15 @@
 package com.maestrodev.maestrocontinuumplugin;
 
 import com.maestrodev.MaestroWorker;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
-import org.apache.maven.continuum.xmlrpc.project.BuildAgentConfiguration;
-import org.apache.maven.continuum.xmlrpc.project.BuildAgentGroupConfiguration;
-import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
-import org.apache.maven.continuum.xmlrpc.project.BuildResult;
-import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
-import org.apache.maven.continuum.xmlrpc.project.Project;
-import org.apache.maven.continuum.xmlrpc.project.ProjectGroup;
-import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
+import org.apache.maven.continuum.xmlrpc.project.*;
 import org.apache.maven.continuum.xmlrpc.system.Profile;
 import org.json.simple.JSONObject;
 
@@ -98,6 +94,12 @@ public class ContinuumWorker extends MaestroWorker
         }
         
         return null;
+    }
+
+    private ContinuumXmlRpcClient getClient() throws MalformedURLException {
+      URL url = getUrl();
+      this.writeOutput("Using Continuum At " + url.toString() + "\n");
+      return new ContinuumXmlRpcClient( url, this.getField("username"), this.getField("password"));
     }
     
     
@@ -184,6 +186,50 @@ public class ContinuumWorker extends MaestroWorker
             throw new Exception("Unable To Add Build Definition " + ex.getMessage());
         }
     }
+
+    private URL getUrl() throws MalformedURLException {
+      URL url;
+      String scheme = "http" + (Boolean.parseBoolean(this.getField("use_ssl")) ? "s" : "");
+      url = new URL(scheme + "://"+this.getField("host")+":"+
+              this.getField("port") + "/" + 
+              this.getField("web_path").replaceAll("^\\/", "") + "/" +
+              "xmlrpc");
+      return url;
+    }
+
+  private Profile setupBuildAgent(Profile profile) throws Exception {
+    try{
+        writeOutput("Using Agent Facts To Locate Continuum Build Agent\n");
+        profile = findProfile(getField("composition"));
+        Map facts = (Map)(getFields().get("facts"));
+        BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
+        
+        if(profile == null){
+            writeOutput("Build Environment Not Found, Created New ("+getField("composition")+")\n");
+            profile = this.createProfile(getField("composition"), this.createBuildAgentGroup(getField("composition"), buildAgent).getName());
+        } else {
+//                        verify build agent is in group
+            writeOutput("Build Environment Found, Verifying Agent\n");
+            BuildAgentGroupConfiguration buildAgentGroupConfiguration = client.getBuildAgentGroup(profile.getBuildAgentGroup());
+            boolean found = false;
+            
+            for(BuildAgentConfiguration ba : buildAgentGroupConfiguration.getBuildAgents()){
+                if(ba.getUrl().equals(buildAgent.getUrl())){
+                    found = true;
+                    break;
+                }
+            }
+            
+            if(!found){
+                buildAgentGroupConfiguration.addBuildAgent(buildAgent);
+                client.updateBuildAgentGroup(buildAgentGroupConfiguration);
+            }
+        }
+    }catch(Exception e){
+        throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment" + e.getMessage());
+    }
+    return profile;
+  }
     
     private Project triggerBuild(Project project, BuildDefinition buildDefinition) throws Exception{
         int buildNumber = project.getBuildNumber();
@@ -252,14 +298,7 @@ public class ContinuumWorker extends MaestroWorker
     
     public void build() {
         try{
-            URL url = null;
-         
-            url = new URL("http://"+this.getField("host")+":"+
-                    this.getField("port") + "/" + 
-                    this.getField("web_path").replaceAll("^\\/", "") + "/" +
-                    "xmlrpc");
-            this.writeOutput("Using Continuum At " + url.toString() + "\n");
-            client = new ContinuumXmlRpcClient( url, this.getField("username"), this.getField("password"));
+            client = getClient();
            
             String projectGroupName = this.getField("project_group");
             this.writeOutput("Searching For Project Group " + projectGroupName + "\n");
@@ -277,36 +316,7 @@ public class ContinuumWorker extends MaestroWorker
 
             Profile profile = null;
             if(getField("use_agent_facts") != null && getField("use_agent_facts").equals("true")){
-                try{
-                    writeOutput("Using Agent Facts To Locate Continuum Build Agent\n");
-                    profile = findProfile(getField("composition"));
-                    Map facts = (Map)(getFields().get("facts"));
-                    BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
-                    
-                    if(profile == null){
-                        writeOutput("Build Environment Not Found, Created New ("+getField("composition")+")\n");
-                        profile = this.createProfile(getField("composition"), this.createBuildAgentGroup(getField("composition"), buildAgent).getName());
-                    } else {
-//                        verify build agent is in group
-                        writeOutput("Build Environment Found, Verifying Agent\n");
-                        BuildAgentGroupConfiguration buildAgentGroupConfiguration = client.getBuildAgentGroup(profile.getBuildAgentGroup());
-                        boolean found = false;
-                        
-                        for(BuildAgentConfiguration ba : buildAgentGroupConfiguration.getBuildAgents()){
-                            if(ba.getUrl().equals(buildAgent.getUrl())){
-                                found = true;
-                                break;
-                            }
-                        }
-                        
-                        if(!found){
-                            buildAgentGroupConfiguration.addBuildAgent(buildAgent);
-                            client.updateBuildAgentGroup(buildAgentGroupConfiguration);
-                        }
-                    }
-                }catch(Exception e){
-                    throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment" + e.getMessage());
-                }
+              profile = setupBuildAgent(profile);
             }
             
             this.writeOutput("Searching For Build Definition With Goals " + goals+ "\n");
@@ -348,6 +358,94 @@ public class ContinuumWorker extends MaestroWorker
         }
     }
 
+    public void addMavenProject() {
+      try {
+        client = this.getClient();
+        ProjectGroup projectGroup = null;
+        try{
+          projectGroup = getProjectGroup(getField("group_name"));
+          
+        } catch (Exception e) {
+          projectGroup = createProjectGroup();
+        }
+        
+        ProjectSummary project = null;
+        try{
+           project = getProjectFromProjectGroup(getField("project_name"), projectGroup);
+        }catch(Exception e) {
+          project = createMavenProject(projectGroup.getId());
+        }
+        
+        writeOutput("Successfully Created Maven Project " + project.getName());
+      } catch (Exception e) {
+        this.setError("Continuum Build Failed: " + e.getMessage());   
+      }
+    }
 
+    public void addShellProject() {
+      try {
+        client = this.getClient();
+        ProjectGroup projectGroup = null;
+        try{
+          projectGroup = getProjectGroup(getField("group_name"));
+          
+        } catch (Exception e) {
+          projectGroup = createProjectGroup();
+        }
+        
+        ProjectSummary project = null;
+        try{
+           project = getProjectFromProjectGroup(getField("project_name"), projectGroup);
+        }catch(Exception e) {
+          project = createShellProject(projectGroup.getId());
+        }
+        
+        writeOutput("Successfully Created Shell Project " + project.getName());
+      } catch (Exception e) {
+        this.setError("Continuum Build Failed: " + e.getMessage());   
+      }
+    }
+    
+    private ProjectGroup createProjectGroup() throws Exception {
+      ProjectGroupSummary projectGroup = new ProjectGroupSummary();
+      projectGroup.setDescription(getField("description"));
+      projectGroup.setGroupId(getField("group_id"));
+      projectGroup.setName(getField("group_name"));
+      client.addProjectGroup(projectGroup);
+      
+      return getProjectGroup(getField("group_name"));
+    }
 
+    private ProjectSummary createShellProject(int projectGroupId) throws Exception {
+      ProjectSummary project = new ProjectSummary();
+      project.setName(getField("project_name"));
+      project.setDescription(getField("project_description"));
+      project.setVersion(getField("project_version"));
+      project.setScmUrl(getField("scm_url"));
+      project.setScmUsername(getField("scm_username"));
+      project.setScmPassword(getField("scm_password"));
+      project.setScmUseCache(Boolean.parseBoolean(getField("scm_use_cache")));
+      project.setScmTag(getField("scm_branch"));
+      
+      
+      
+      project = client.addShellProject(project, projectGroupId);
+      
+      if(project == null) {
+        throw new Exception("Unable To Create Project In " + getField("group_name"));
+      }
+      return project;
+    }
+    
+    private ProjectSummary createMavenProject(int projectGroupId) throws Exception {      
+      AddingResult result = client.addMavenTwoProject(getField("pom_url"), projectGroupId);
+      if(result.hasErrors()){
+        throw new Exception(result.getErrorsAsString());
+      }
+      ProjectSummary project = result.getProjects().get(0);
+      if( project == null) {
+        throw new Exception("Unable To Create Project In " + getField("group_name"));
+      }
+      return project;
+    }
 }
