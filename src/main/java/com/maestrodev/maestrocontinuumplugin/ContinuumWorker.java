@@ -5,8 +5,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
 import org.apache.maven.continuum.xmlrpc.project.*;
@@ -363,21 +361,30 @@ public class ContinuumWorker extends MaestroWorker
         client = this.getClient();
         ProjectGroup projectGroup = null;
         try{
+          writeOutput("Requesting Group " + getField("group_name") + " From Continuum\n");
           projectGroup = getProjectGroup(getField("group_name"));
+          writeOutput("Found Group " + getField("group_name") + " In Continuum\n");
           
         } catch (Exception e) {
+          writeOutput("Creating " + getField("group_name") + " In Continuum\n");
           projectGroup = createProjectGroup();
+          writeOutput("Created " + getField("group_name") + " In Continuum\n");
         }
         
         ProjectSummary project = null;
         try{
+           writeOutput("Requesting Project " + getField("project_name") + " In Continuum\n");
            project = getProjectFromProjectGroup(getField("project_name"), projectGroup);
+           writeOutput("Found Project " + getField("project_name") + " In Continuum\n");
         }catch(Exception e) {
+          writeOutput("Creating " + getField("project_name") + " In Continuum\n");
           project = createMavenProject(projectGroup.getId());
+          writeOutput("Created " + getField("project_name") + " In Continuum\n");
         }
         
-        writeOutput("Successfully Created Maven Project " + project.getName());
+        writeOutput("Successfully Processed Maven Project " + getField("project_name") + "\n");
       } catch (Exception e) {
+        e.printStackTrace();
         this.setError("Continuum Build Failed: " + e.getMessage());   
       }
     }
@@ -387,20 +394,27 @@ public class ContinuumWorker extends MaestroWorker
         client = this.getClient();
         ProjectGroup projectGroup = null;
         try{
+          writeOutput("Requesting Group " + getField("group_name") + " From Continuum\n");
           projectGroup = getProjectGroup(getField("group_name"));
-          
+          writeOutput("Found Group " + getField("group_name") + " In Continuum\n");
         } catch (Exception e) {
+          writeOutput("Creating " + getField("group_name") + " In Continuum\n");
           projectGroup = createProjectGroup();
+          writeOutput("Created " + getField("group_name") + " In Continuum\n");
         }
         
         ProjectSummary project = null;
         try{
-           project = getProjectFromProjectGroup(getField("project_name"), projectGroup);
+          writeOutput("Requesting Project " + getField("project_name") + " In Continuum\n");
+          project = getProjectFromProjectGroup(getField("project_name"), projectGroup);
+          writeOutput("Found Project " + getField("project_name") + " In Continuum\n");
         }catch(Exception e) {
+          writeOutput("Creating " + getField("project_name") + " In Continuum\n");
           project = createShellProject(projectGroup.getId());
+          writeOutput("Created " + getField("project_name") + " In Continuum\n");
         }
         
-        writeOutput("Successfully Created Shell Project " + project.getName());
+        writeOutput("Successfully Processed Shell Project " + getField("project_name") + "\n");
       } catch (Exception e) {
         this.setError("Continuum Build Failed: " + e.getMessage());   
       }

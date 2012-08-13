@@ -34,6 +34,35 @@ public class ContinuumWorkerTest
         return new TestSuite( ContinuumWorkerTest.class );
     }
 
+    public void testCreateMavenProject () throws Exception 
+    {
+      ContinuumWorker continuumWorker = mock(ContinuumWorker.class);
+      JSONObject fields = new JSONObject();
+      fields.put("group_name", "HelloWorld");
+      fields.put("group_id", "com.maestrodev");        
+      fields.put("group_description", "clean test install package");
+      fields.put("pom_url", "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml");
+      fields.put("project_name", "ActiveMQ");
+      fields.put("host", "localhost");
+      fields.put("port", 8081);
+      fields.put("username", "admin");        
+      fields.put("password", "password1");        
+      fields.put("web_path", "/continuum");
+      fields.put("use_ssl", false);
+      fields.put("__context_outputs__", new JSONObject());
+
+      JSONObject workitem = new JSONObject();
+      workitem.put("fields", fields);
+      continuumWorker.setWorkitem(workitem);
+
+
+      Method method = continuumWorker.getClass().getMethod("addMavenProject");
+      method.invoke(continuumWorker);
+
+//        assertNotNull(continuumWorker.getField("__context_outputs__"));
+      assertNull(continuumWorker.getField("__error__"),continuumWorker.getField("__error__"));
+    }
+    
     /**
      * Rigourous Test :-)
      */
