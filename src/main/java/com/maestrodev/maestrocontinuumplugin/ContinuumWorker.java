@@ -307,12 +307,12 @@ public class ContinuumWorker extends MaestroWorker
         try{
             client = getClient();
            
-            String projectGroupName = this.getField("project_group");
+            String projectGroupName = this.getField("group_name");
             this.writeOutput("Searching For Project Group " + projectGroupName + "\n");
             ProjectGroup projectGroup = this.getProjectGroup(projectGroupName);
             this.writeOutput("Found Project Group " + projectGroup.getName()+ "\n");
             
-            String projectName = this.getField("project");
+            String projectName = this.getField("project_name");
             this.writeOutput("Searching For Project " + projectName+ "\n");
             Project project = this.getProjectFromProjectGroup(projectName, projectGroup);
             this.writeOutput("Found Project " + project.getName()+ "\n");
@@ -328,7 +328,7 @@ public class ContinuumWorker extends MaestroWorker
               buildFile = "";
 
             Profile profile = null;
-            if(getField("use_agent_facts") != null && getField("use_agent_facts").equals("true")){
+            if(((Map)getFields().get("facts")).get("continuum_build_agent") != null){
               profile = setupBuildAgent(profile);
             }
             
@@ -350,7 +350,6 @@ public class ContinuumWorker extends MaestroWorker
             if(buildDefinition == null){
                 buildDefinition = this.getBuildDefinitionFromProject(goals, arguments, buildFile, project, profile);
             }
-            
             
             this.writeOutput("Retrieved Build Definition " + buildDefinition.getId()+ "\n");
             
