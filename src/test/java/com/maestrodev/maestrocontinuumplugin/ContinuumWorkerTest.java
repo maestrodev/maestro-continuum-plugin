@@ -80,8 +80,6 @@ public class ContinuumWorkerTest
         fields.put("username", "admin");        
         fields.put("password", "adm1n");        
         fields.put("web_path", "/continuum");
-        fields.put("use_agent_facts", "false");
-        fields.put("timeout", 180);
         fields.put("composition", "Test Composition");
         fields.put("__context_outputs__", new JSONObject());
         
@@ -112,8 +110,6 @@ public class ContinuumWorkerTest
         fields.put("username", "admin");        
         fields.put("password", "adm1n");        
         fields.put("web_path", "/continuum");
-        fields.put("use_agent_facts", "false");
-        fields.put("timeout", 180);
         fields.put("composition", "Test Composition");
         fields.put("__context_outputs__", new JSONObject());
         
@@ -150,8 +146,6 @@ public class ContinuumWorkerTest
         fields.put("username", "admin");        
         fields.put("password", "adm1n");        
         fields.put("web_path", "/continuum");
-        fields.put("use_agent_facts", "false");
-        fields.put("timeout", 180);
         fields.put("composition", "Test Composition");
         fields.put("__context_outputs__", new JSONObject());
         
@@ -187,8 +181,6 @@ public class ContinuumWorkerTest
         fields.put("username", "admin");        
         fields.put("password", "adm1n");        
         fields.put("web_path", "continuum");
-        fields.put("use_agent_facts", "true");
-        fields.put("timeout", 180);
         fields.put("composition", "Test Composition");
         
         Map agentFacts = new JSONObject();

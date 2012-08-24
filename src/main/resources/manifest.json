@@ -15,19 +15,19 @@
       "inputs" : {
         "project_name" : {"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project To Build"},
         "group_name":{"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project Group"},
-        "goals":{"value" : "", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
-        "arguments":{"value" : "", "type" : "String", "required" : false, "description":"Arguments To Pass To Maven Or The Build File"},
+        "goals":{"value" : "clean deploy", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
+        "arguments":{"value" : "--batch-mode -e", "type" : "String", "required" : false, "description":"Arguments To Pass To Maven Or The Build File"},
         "build_file":{"value" : "", "type" : "String", "required" : true, "description":"Maven Pom Or Shell Executable"},
         "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
         "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
         "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
         "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
-        "timeout":{"value" : 120, "type" : "Integer", "required" : true, "description":"Seconds To Wait For Build To Begin"},
-        "web_path":{"value" : "", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
+        "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
         "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
       },
       "outputs" : {},
-      "tool_name":"Build"
+      "tool_name":"Build",
+      "icon":"continuum.png"
     }
   },
   { 
@@ -60,11 +60,12 @@
         "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
         "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
         "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
-        "web_path":{"value" : "", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
+        "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
         "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
       },
       "outputs" : {},
-      "tool_name":"Build"
+      "tool_name":"Build",
+      "icon":"continuum.png"
     }
   },
   { 
@@ -82,20 +83,20 @@
     "task":{
       "command" : "/continuum/addMavenProject",    
       "inputs" : {
-        "project_name" : {"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project To Build"},
         "pom_url":{"value" : "", "type" : "String", "required" : true, "description":"Remote Url Of The Pom File"},
-        "group_name":{"value" : "", "type" : "String", "required" : true, "description":"Name Of The Group That Contains The Project"},
-        "group_id":{"value" : "", "type" : "String", "required" : true, "description":"Id Of The Group That Contains The Project"},
-        "group_description":{"value" : "", "type" : "String", "required" : true, "description":"Description Of The Group That Contains The Project"},
+        "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Group That Contains The Project"},
+        "group_id":{"value" : "", "type" : "String", "required" : false, "description":"Id Of The Group That Contains The Project"},
+        "group_description":{"value" : "", "type" : "String", "required" : false, "description":"Description Of The Group That Contains The Project"},
         "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
         "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
         "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
         "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
-        "web_path":{"value" : "", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
+        "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
         "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
       },
       "outputs" : {},
-      "tool_name":"Build"
+      "tool_name":"Build",
+      "icon":"continuum.png"
     }
   }
 ]
