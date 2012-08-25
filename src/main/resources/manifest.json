@@ -87,6 +87,7 @@
         "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Group That Contains The Project"},
         "group_id":{"value" : "", "type" : "String", "required" : false, "description":"Id Of The Group That Contains The Project"},
         "group_description":{"value" : "", "type" : "String", "required" : false, "description":"Description Of The Group That Contains The Project"},
+        "single_directory":{"value" : true, "type" : "Boolean", "required" : true, "description":"Checkout multi-module project in single directory"},
         "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
         "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
         "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},

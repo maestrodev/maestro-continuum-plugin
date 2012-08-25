@@ -331,7 +331,6 @@ public class ContinuumWorker extends MaestroWorker
                project.getState() != ContinuumProjectState.FAILED &&
                project.getState() != ContinuumProjectState.ERROR &&
                project.getState() != ContinuumProjectState.NEW){
-               writeOutput(client.getProjectStatusAsString(project.getState()) +"\n");
             switch(project.getState()) {
               case ContinuumProjectState.CHECKEDOUT:
                 writeOutput("Source Code Checkout Complete\n");
@@ -538,8 +537,13 @@ public class ContinuumWorker extends MaestroWorker
       return project;
     }
     
-    private ProjectSummary createMavenProject(int projectGroupId) throws Exception {      
-      AddingResult result = client.addMavenTwoProjectAsSingleProject(getField("pom_url"), projectGroupId);
+    private ProjectSummary createMavenProject(int projectGroupId) throws Exception { 
+      AddingResult result;
+      if(Boolean.parseBoolean(getField("single_directory"))){
+       result = client.addMavenTwoProjectAsSingleProject(getField("pom_url"), projectGroupId);
+      }else{
+        result = client.addMavenTwoProject(getField("pom_url"), projectGroupId);
+      }
       if(result.hasErrors()){
         throw new Exception(result.getErrorsAsString());
       }
