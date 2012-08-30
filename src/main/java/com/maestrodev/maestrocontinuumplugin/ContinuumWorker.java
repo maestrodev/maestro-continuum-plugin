@@ -254,7 +254,6 @@ public class ContinuumWorker extends MaestroWorker
     
     private Project triggerBuild(Project project, BuildDefinition buildDefinition) throws Exception{
         int buildId = project.getLatestBuildId();
-//        int buildId = project.getLatestBuildId();
         
         BuildTrigger buildTrigger = new BuildTrigger();
         buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
@@ -269,16 +268,6 @@ public class ContinuumWorker extends MaestroWorker
         long start = System.currentTimeMillis();
 
         this.writeOutput("Waiting For Build To Start\n");
-        
-//        statusMap.put( ContinuumProjectState.CHECKEDOUT, "New" );
-//        statusMap.put( ContinuumProjectState.OK, "OK" );
-//        statusMap.put( ContinuumProjectState.FAILED, "Failed" );
-//        statusMap.put( ContinuumProjectState.ERROR, "Error" );
-//        statusMap.put( ContinuumProjectState.BUILDING, "Building" );
-//        statusMap.put( ContinuumProjectState.CHECKING_OUT, "Checking out" );
-//        statusMap.put( ContinuumProjectState.UPDATING, "Updating" );
-//        statusMap.put( ContinuumProjectState.WARNING
-        
 
         while(project.getState() != ContinuumProjectState.BUILDING){
             if(System.currentTimeMillis() - start >  timeout){
@@ -287,8 +276,9 @@ public class ContinuumWorker extends MaestroWorker
                 throw new TimeoutException("Failed To Detect Build Start After " + (timeout/1000) + " Seconds");
               }else{
                 if(result.getState() == ContinuumProjectState.FAILED ||
-                        result.getState() == ContinuumProjectState.ERROR)
-                throw new Exception(result.getError());
+                        result.getState() == ContinuumProjectState.ERROR) {
+                  throw new Exception(result.getError());
+                }
               }
             }
             Thread.sleep(1000);
