@@ -1,13 +1,13 @@
 package com.maestrodev.maestrocontinuumplugin;
 
 import com.maestrodev.MaestroWorker;
+import com.maestrodev.StompConnectionFactory;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
 import org.apache.maven.continuum.xmlrpc.project.*;
@@ -21,12 +21,19 @@ import org.json.simple.JSONObject;
 public class ContinuumWorker extends MaestroWorker
 {
     
-    private static ContinuumXmlRpcClient client;
+    private ContinuumXmlRpcClient client;
+    private ContinuumXmlRpcClientFactory continuumXmlRpcClientFactory;
     
     public ContinuumWorker(){
         super();
-    }
+        continuumXmlRpcClientFactory = ContinuumXmlRpcClientFactory.getInstance();
+    }    
     
+    public ContinuumWorker(StompConnectionFactory stompConnectionFactory, 
+            ContinuumXmlRpcClientFactory continuumXmlRpcClientFactory) {
+        super(stompConnectionFactory);
+        this.continuumXmlRpcClientFactory = continuumXmlRpcClientFactory;
+    }
     
     public void puts(String string){
         System.out.println(string);
@@ -103,7 +110,8 @@ public class ContinuumWorker extends MaestroWorker
     private ContinuumXmlRpcClient getClient() throws MalformedURLException {
       URL url = getUrl();
       this.writeOutput("Using Continuum At " + url.toString() + "\n");
-      return new ContinuumXmlRpcClient( url, this.getField("username"), this.getField("password"));
+      return continuumXmlRpcClientFactory.getClient(url, this.getField("username"), 
+              this.getField("password"));
     }
     
     
@@ -229,6 +237,7 @@ public class ContinuumWorker extends MaestroWorker
     try{
         writeOutput("Using Agent Facts To Locate Continuum Build Agent\n");
         profile = findProfile(getField("composition"));
+        @SuppressWarnings("rawtypes")
         Map facts = (Map)(getFields().get("facts"));
         BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
         
@@ -272,7 +281,6 @@ public class ContinuumWorker extends MaestroWorker
   }
     
     private Project triggerBuild(Project project, BuildDefinition buildDefinition) throws Exception{
-        int buildId = project.getLatestBuildId();
         
         BuildTrigger buildTrigger = new BuildTrigger();
         buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
@@ -373,6 +381,7 @@ public class ContinuumWorker extends MaestroWorker
         }
     }
     
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void build() {
         try{
             client = getClient();
@@ -466,15 +475,13 @@ public class ContinuumWorker extends MaestroWorker
             writeOutput("Created " + getField("group_name") + " In Continuum\n");
           }
           projectGroupId = projectGroup.getId();
-        }
-        ProjectSummary project = null;
-        
+        }        
         writeOutput("Processing Project In Continuum\n");
         try{
-          project = createMavenProject(projectGroupId);
+          createMavenProject(projectGroupId);
           writeOutput("Project Created\n");
         }catch(Exception e){
-          if(!e.getMessage().contains("Trying to add duplicate projects in the same project group")) {
+          if(e.getMessage() != null && !e.getMessage().contains("Trying to add duplicate projects in the same project group")) {
             throw new Exception(e);
           }
           writeOutput("Project Detected\n");
@@ -502,14 +509,13 @@ public class ContinuumWorker extends MaestroWorker
           writeOutput("Created " + getField("group_name") + " In Continuum\n");
         }
         
-        ProjectSummary project = null;
         try{
           writeOutput("Requesting Project " + getField("project_name") + " In Continuum\n");
-          project = getProjectFromProjectGroup(getField("project_name"), projectGroup);
+          getProjectFromProjectGroup(getField("project_name"), projectGroup);
           writeOutput("Found Project " + getField("project_name") + " In Continuum\n");
         }catch(Exception e) {
           writeOutput("Creating " + getField("project_name") + " In Continuum\n");
-          project = createShellProject(projectGroup.getId());
+          createShellProject(projectGroup.getId());
           writeOutput("Created " + getField("project_name") + " In Continuum\n");
         }
         
