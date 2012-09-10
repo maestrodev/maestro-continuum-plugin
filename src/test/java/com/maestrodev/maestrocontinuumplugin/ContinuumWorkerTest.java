@@ -81,7 +81,6 @@ public class ContinuumWorkerTest
       fields.put("group_id", "com.maestrodev");        
       fields.put("group_description", "clean test install package");
       fields.put("pom_url", "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml");
-      fields.put("project_name", "ActiveMQ");
       fields.put("host", "localhost");
       fields.put("port", 8081);
       fields.put("username", "admin");        
