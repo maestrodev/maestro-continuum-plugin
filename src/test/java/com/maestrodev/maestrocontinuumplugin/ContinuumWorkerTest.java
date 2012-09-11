@@ -142,10 +142,10 @@ public class ContinuumWorkerTest
         
        JSONObject fields = new JSONObject();
        fields.put("pom_url", projectPom);
-       fields.put("host", "vm-preview.maestrodev.com");
+       fields.put("host", "localhost");
        fields.put("port", 80);
        fields.put("username", "admin");        
-       fields.put("password", "maestr0");        
+       fields.put("password", "admin0");        
        fields.put("web_path", "/continuum");
        fields.put("use_ssl", false);
        fields.put("__context_outputs__", new JSONObject());
@@ -182,10 +182,10 @@ public class ContinuumWorkerTest
       
       JSONObject fields = new JSONObject();
       fields.put("pom_url", projectPom);
-      fields.put("host", "vm-preview.maestrodev.com");
+      fields.put("host", "localhost");
       fields.put("port", 80);
       fields.put("username", "admin");        
-      fields.put("password", "maestr0");        
+      fields.put("password", "admin0");        
       fields.put("web_path", "/continuum");
       fields.put("use_ssl", false);
       fields.put("__context_outputs__", new JSONObject());
@@ -314,10 +314,10 @@ public class ContinuumWorkerTest
         JSONObject fields = new JSONObject();
         fields.put("goals", "clean test install package");
         fields.put("arguments", "--batch-mode");
-        fields.put("host", "vm-preview.maestrodev.com");
+        fields.put("host", "localhost");
         fields.put("port", 80);
         fields.put("username", "admin");        
-        fields.put("password", "maestr0");        
+        fields.put("password", "admin0");        
         fields.put("web_path", "/continuum");
         fields.put("composition", "Test Composition");
         fields.put("facts", new JSONObject());        
