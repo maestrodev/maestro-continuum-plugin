@@ -13,8 +13,8 @@
     "task":{
       "command" : "/continuum/build",    
       "inputs" : {
-        "project_name" : {"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project To Build"},
-        "group_name":{"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project Group"},
+        "project_name" : {"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project To Build"},
+        "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project Group"},
         "goals":{"value" : "clean deploy", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
         "arguments":{"value" : "--batch-mode -e", "type" : "String", "required" : false, "description":"Arguments To Pass To Maven Or The Build File"},
         "build_file":{"value" : "", "type" : "String", "required" : true, "description":"Maven Pom Or Shell Executable"},
@@ -95,7 +95,9 @@
         "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
         "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
       },
-      "outputs" : {},
+      "outputs" : {
+        "continuum_project_id": {"type" : "Integer" }
+      },
       "tool_name":"Build",
       "icon":"continuum.png"
     }

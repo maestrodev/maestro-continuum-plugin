@@ -35,10 +35,6 @@ public class ContinuumWorker extends MaestroWorker
         this.continuumXmlRpcClientFactory = continuumXmlRpcClientFactory;
     }
     
-    public void puts(String string){
-        System.out.println(string);
-    }
-    
     private BuildAgentConfiguration getBuildAgent(String url) throws Exception {
         if(!url.contains("http")) {
           url = "http://" + url + ":8181/continuum-buildagent/xmlrpc";
@@ -129,11 +125,18 @@ public class ContinuumWorker extends MaestroWorker
     
     
     private Project getProjectFromProjectGroup(String projectName, ProjectGroup projectGroup) throws Exception{
+        
+        return client.getProjectWithAllDetails(getProjectSummary(projectName, projectGroup).getId());        
+    }
+    
+    
+    private ProjectSummary getProjectSummary(String projectName, 
+            ProjectGroup projectGroup) throws Exception{
         List<ProjectSummary> projects = projectGroup.getProjects();
         
         for(ProjectSummary project : projects){
             if(project.getName().equals(projectName))
-                return client.getProjectWithAllDetails(project.getId());
+               return project;
         }
         
         throw new Exception("Unable To Find Project " + projectName);
@@ -385,14 +388,21 @@ public class ContinuumWorker extends MaestroWorker
     public void build() {
         try{
             client = getClient();
-            String projectGroupName = this.getField("group_name");
-            this.writeOutput("Searching For Project Group " + projectGroupName + "\n");
-            ProjectGroup projectGroup = this.getProjectGroup(projectGroupName);
-            this.writeOutput("Found Project Group " + projectGroup.getName()+ "\n");
+            Long projectId = null;
+            Project project = null;
+            if (getFields().get("__context_outputs__") != null &&
+                    (projectId = (Long)((JSONObject)this.getFields().get("__context_outputs__")).get("continuum_project_id")) != null) {
+                project = client.getProjectWithAllDetails(projectId.intValue());
+            } else {
+                String projectGroupName = this.getField("group_name");
+                this.writeOutput("Searching For Project Group " + projectGroupName + "\n");
+                ProjectGroup projectGroup = this.getProjectGroup(projectGroupName);
+                this.writeOutput("Found Project Group " + projectGroup.getName()+ "\n");
             
-            String projectName = this.getField("project_name");
-            this.writeOutput("Searching For Project " + projectName+ "\n");
-            Project project = this.getProjectFromProjectGroup(projectName, projectGroup);
+                String projectName = this.getField("project_name");
+                this.writeOutput("Searching For Project " + projectName+ "\n");
+                project = this.getProjectFromProjectGroup(projectName, projectGroup);
+            }
             this.writeOutput("Found Project " + project.getName()+ "\n");
             
             String goals = this.getField("goals");
@@ -422,10 +432,9 @@ public class ContinuumWorker extends MaestroWorker
             BuildDefinition buildDefinition = null;
             if(this.getFields().get("__previous_context_outputs__") != null &&
                     ((JSONObject)this.getFields().get("__previous_context_outputs__")).get("build_definition_id") != null){
-                puts("using previous build id");
                 try{
                     buildDefinition = this.getBuildDefinitionFromId(Integer.parseInt(((JSONObject)this.getFields().get("__previous_context_outputs__")).get("build_definition_id").toString()),goals, arguments, buildFile, project, profile);
-                }catch(Exception w){
+                } catch(Exception w){
                     buildDefinition = this.getBuildDefinitionFromProject(goals, arguments, buildFile, project, profile, taskId);
                 }
                 
@@ -442,12 +451,13 @@ public class ContinuumWorker extends MaestroWorker
             
             waitForBuild(project);
             
-            JSONObject outputData = (JSONObject)this.getFields().get("__context_outputs__");
+            JSONObject outputData = (JSONObject)getFields().get("__context_outputs__");
             if(outputData == null)
                 outputData = new JSONObject();
             outputData.put("build_definition_id", buildDefinition.getId());
-            outputData.put("build_id", project.getLatestBuildId());            
-            this.getFields().put("__context_outputs__", outputData);
+            outputData.put("build_id", project.getLatestBuildId());      
+            
+            getFields().put("__context_outputs__", outputData);
             
             BuildResult buildResult = getBuildResult(project.getId());
             if(buildResult != null){
@@ -459,12 +469,13 @@ public class ContinuumWorker extends MaestroWorker
         }
     }
 
+  
+    @SuppressWarnings("unchecked")
     public void addMavenProject() {
       try {
         client = this.getClient();
-        ProjectGroup projectGroup = null;
-        int projectGroupId = 0;
-        if(getField("group_name") != null || getField("group_name") != "") {
+        ProjectGroup projectGroup = null;        
+        if(getField("group_name") != null && getField("group_name") != "") {
           try{
             writeOutput("Requesting Group " + getField("group_name") + " From Continuum\n");
             projectGroup = getProjectGroup(getField("group_name"));
@@ -474,13 +485,30 @@ public class ContinuumWorker extends MaestroWorker
             projectGroup = createProjectGroup();
             writeOutput("Created " + getField("group_name") + " In Continuum\n");
           }
-          projectGroupId = projectGroup.getId();
         }        
         writeOutput("Processing Project In Continuum\n");
+        ProjectSummary projectSummary;
         try{
-          createMavenProject(projectGroupId);
-          writeOutput("Project Created\n");
-        }catch(Exception e){
+            if (projectGroup != null)
+                projectSummary = createMavenProject(projectGroup.getId());
+            else
+                projectSummary = createMavenProject();
+            if (projectSummary.getId() == 0) {
+                
+                ProjectGroup group = getProjectGroup(projectSummary.getName());
+                projectSummary = getProjectSummary(projectSummary.getName(), group);
+                writeOutput("Found Existing Project (" + projectSummary.getId() + ")\n");
+            } else {
+                writeOutput("Project Created (" + projectSummary.getId() + ")\n");
+            }
+            
+            JSONObject outputData = (JSONObject)this.getFields().get("__context_outputs__");
+            if(outputData == null)
+                outputData = new JSONObject();
+            outputData.put("continuum_project_id", projectSummary.getId());
+            this.setField("continuum_project_id", projectSummary.getId());            
+            this.setField("__context_outputs__", outputData);
+        } catch(Exception e){
           if(e.getMessage() != null && !e.getMessage().contains("Trying to add duplicate projects in the same project group")) {
             throw new Exception(e);
           }
@@ -495,6 +523,7 @@ public class ContinuumWorker extends MaestroWorker
       }
     }
 
+    @SuppressWarnings("unchecked")
     public void addShellProject() {
       try {
         client = this.getClient();
@@ -508,18 +537,25 @@ public class ContinuumWorker extends MaestroWorker
           projectGroup = createProjectGroup();
           writeOutput("Created " + getField("group_name") + " In Continuum\n");
         }
-        
+        ProjectSummary projectSummary;
         try{
           writeOutput("Requesting Project " + getField("project_name") + " In Continuum\n");
-          getProjectFromProjectGroup(getField("project_name"), projectGroup);
+          projectSummary = getProjectFromProjectGroup(getField("project_name"), projectGroup);
           writeOutput("Found Project " + getField("project_name") + " In Continuum\n");
         }catch(Exception e) {
           writeOutput("Creating " + getField("project_name") + " In Continuum\n");
-          createShellProject(projectGroup.getId());
+          projectSummary = createShellProject(projectGroup.getId());
           writeOutput("Created " + getField("project_name") + " In Continuum\n");
         }
         
         writeOutput("Successfully Processed Shell Project " + getField("project_name") + "\n");
+        JSONObject outputData = (JSONObject)this.getFields().get("__context_outputs__");
+        if(outputData == null)
+            outputData = new JSONObject();
+        outputData.put("continuum_project_id", projectSummary.getId());
+        this.setField("continuum_project_id", projectSummary.getId());            
+        this.setField("__context_outputs__", outputData);
+
       } catch (Exception e) {
         this.setError("Continuum Build Failed: " + e.getMessage());   
       }
@@ -563,13 +599,29 @@ public class ContinuumWorker extends MaestroWorker
       }else{
         result = client.addMavenTwoProject(getField("pom_url"), projectGroupId);
       }
-      if(result.hasErrors()){
-        throw new Exception(result.getErrorsAsString());
-      }
+      if(result.hasErrors() && (result.getProjects() == null || result.getProjects().isEmpty())) {
+          throw new Exception(result.getErrorsAsString());
+      } 
+        
       ProjectSummary project = result.getProjects().get(0);
       if( project == null) {
         throw new Exception("Unable To Create Project In " + getField("group_name"));
       }
       return project;
     }
+    
+    private ProjectSummary createMavenProject() throws Exception { 
+        AddingResult result;
+        
+        result = client.addMavenTwoProject(getField("pom_url"));
+//        if(result.hasErrors() && (result.getProjects() == null || result.getProjects().isEmpty())) {
+//          throw new Exception(result.getErrorsAsString());
+//        } 
+        
+        ProjectSummary project = result.getProjects().get(0);
+        if( project == null) {
+          throw new Exception("Unable To Create Project In " + getField("group_name"));
+        }
+        return project;
+      }
 }
