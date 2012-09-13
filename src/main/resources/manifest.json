@@ -28,7 +28,18 @@
       "outputs" : {},
       "tool_name":"Build",
       "icon":"continuum.png"
-    }
+    },
+    "source_types": [
+      {
+        "name" : "Continuum",
+        "options" : {
+          "host": "String",
+          "port":"Integer",
+          "username": "String",
+          "password": "Password",
+          "web_path":"String"
+        }
+      }]
   },
   { 
     "name" : "continuum add shell project",
