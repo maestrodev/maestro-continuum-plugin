@@ -148,7 +148,7 @@ public class ContinuumWorker extends MaestroWorker
         
         buildDefinition.setGoals(goals);
         buildDefinition.setArguments(arguments);
-        buildDefinition.setBuildFile(goals);
+        buildDefinition.setBuildFile(buildFile);
         
         if(profile != null)
             buildDefinition.setProfile(profile);
