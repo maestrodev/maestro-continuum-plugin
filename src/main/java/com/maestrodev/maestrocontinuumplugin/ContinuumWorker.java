@@ -624,4 +624,10 @@ public class ContinuumWorker extends MaestroWorker
         }
         return project;
       }
+//
+//    @Override
+//    public void writeOutput(String output) {
+//        super.writeOutput(output);    //To change body of overridden methods use File | Settings | File Templates.
+//        System.out.print(output);
+//    }
 }
