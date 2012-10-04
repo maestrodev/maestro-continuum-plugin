@@ -599,11 +599,18 @@ public class ContinuumWorker extends MaestroWorker
       }else{
         result = client.addMavenTwoProject(getField("pom_url"), projectGroupId);
       }
-      if(result.hasErrors() && (result.getProjects() == null || result.getProjects().isEmpty())) {
-          throw new Exception(result.getErrorsAsString());
-      } 
-        
-      ProjectSummary project = result.getProjects().get(0);
+        if (result.hasErrors()) {
+            if (result.getProjects() == null || result.getProjects().isEmpty()){
+                throw new Exception(result.getErrorsAsString());
+            }
+            else {
+                writeOutput("Found projects, but had errors:\n" + result.getErrorsAsString());
+                writeOutput("Projects: " + result.getProjects() + "\n");
+                writeOutput("Project Groups: " + result.getProjectGroups() + "\n");
+            }
+        }
+
+        ProjectSummary project = result.getProjects().get(0);
       if( project == null) {
         throw new Exception("Unable To Create Project In " + getField("group_name"));
       }
