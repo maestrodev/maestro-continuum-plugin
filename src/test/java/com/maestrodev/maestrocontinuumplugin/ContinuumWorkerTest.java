@@ -1,17 +1,6 @@
 package com.maestrodev.maestrocontinuumplugin;
 
-import static org.mockito.Mockito.*;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.*;
-
+import com.maestrodev.StompConnectionFactory;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
 import org.apache.maven.continuum.xmlrpc.project.AddingResult;
 import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
@@ -21,22 +10,29 @@ import org.apache.maven.continuum.xmlrpc.project.Project;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroup;
 import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
 import org.fusesource.stomp.client.BlockingConnection;
+import org.json.simple.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.json.simple.JSONObject;
 import org.mockito.Matchers;
 
-import static org.hamcrest.CoreMatchers.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.maestrodev.StompConnectionFactory;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit test for simple App.
  */
-public class ContinuumWorkerTest
-{
-    HashMap<String,Object> stompConfig;
+public class ContinuumWorkerTest {
+    HashMap<String, Object> stompConfig;
     StompConnectionFactory stompConnectionFactory;
     BlockingConnection blockingConnection;
 
@@ -47,7 +43,7 @@ public class ContinuumWorkerTest
 
     @Before
     public void setUp() throws Exception {
-        stompConfig = new HashMap<String,Object>();
+        stompConfig = new HashMap<String, Object>();
         stompConfig.put("host", "localhost");
         stompConfig.put("port", "61613");
         stompConfig.put("queue", "test");
@@ -72,37 +68,35 @@ public class ContinuumWorkerTest
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateMavenProject () throws Exception
-    {
-       List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
-       ProjectGroup group = new ProjectGroup();
-       group.setName("HelloWorld");
-       group.setGroupId("com.maestrodev");
-       projectGroups.add(group);
+    public void testCreateMavenProject() throws Exception {
+        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
+        ProjectGroup group = new ProjectGroup();
+        group.setName("HelloWorld");
+        group.setGroupId("com.maestrodev");
+        projectGroups.add(group);
 
         when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
 
 
-      JSONObject fields = createContinuumFields();
-      fields.put("group_name", "HelloWorld");
-      fields.put("group_id", "com.maestrodev");
-      fields.put("group_description", "clean test install package");
-      fields.put("pom_url", "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml");
+        JSONObject fields = createContinuumFields();
+        fields.put("group_name", "HelloWorld");
+        fields.put("group_id", "com.maestrodev");
+        fields.put("group_description", "clean test install package");
+        fields.put("pom_url", "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml");
 
         createWorkItem(fields);
 
 
-      Method method = continuumWorker.getClass().getMethod("addMavenProject");
-      method.invoke(continuumWorker);
+        Method method = continuumWorker.getClass().getMethod("addMavenProject");
+        method.invoke(continuumWorker);
 
-      assertNotNull(continuumWorker.getField("__context_outputs__"));
-      assertNull(continuumWorker.getField("__error__"),continuumWorker.getField("__error__"));
+        assertNotNull(continuumWorker.getField("__context_outputs__"));
+        assertNull(continuumWorker.getField("__error__"), continuumWorker.getField("__error__"));
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateDuplicateMavenProjectWithPom() throws Exception
-    {
+    public void testCreateDuplicateMavenProjectWithPom() throws Exception {
         String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         ProjectSummary project = createProject("com.maestrodev", "HelloWorld", 1);
 
@@ -117,18 +111,18 @@ public class ContinuumWorkerTest
 
         when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
 
-        ProjectSummary duplicateProject = new  ProjectSummary();
+        ProjectSummary duplicateProject = new ProjectSummary();
         duplicateProject.setId(0);
         duplicateProject.setName("HelloWorld");
         duplicateProject.setProjectGroup(group);
 
 
-       AddingResult duplicateResult = new AddingResult();
-       duplicateResult.addError("Trying to add duplicate projects in the same project group");
-       duplicateResult.addProject(duplicateProject);
+        AddingResult duplicateResult = new AddingResult();
+        duplicateResult.addError("Trying to add duplicate projects in the same project group");
+        duplicateResult.addProject(duplicateProject);
 
-       when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(duplicateResult);
-       when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
+        when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(duplicateResult);
+        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
 
         JSONObject fields = createContinuumFields();
         fields.put("pom_url", projectPom);
@@ -136,44 +130,42 @@ public class ContinuumWorkerTest
         createWorkItem(fields);
 
 
-       Method method = continuumWorker.getClass().getMethod("addMavenProject");
-       method.invoke(continuumWorker);
-       JSONObject output = (JSONObject)continuumWorker.getFields().get("__context_outputs__");
-       assertThat((Integer)output.get("continuum_project_id"), is(equalTo(project.getId())));
-       assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        Method method = continuumWorker.getClass().getMethod("addMavenProject");
+        method.invoke(continuumWorker);
+        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
+        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
 
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCreateMavenProjectWithPom() throws Exception
-    {
+    public void testCreateMavenProjectWithPom() throws Exception {
 
-       String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
+        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
 
         ProjectSummary project = createProject("com.maestrodev", "HelloWorld", 1);
 
-       AddingResult result = new AddingResult();
-       result.addProject(project);
-       when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(result);
+        AddingResult result = new AddingResult();
+        result.addProject(project);
+        when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(result);
 
-      JSONObject fields = createContinuumFields();
-      fields.put("pom_url", projectPom);
+        JSONObject fields = createContinuumFields();
+        fields.put("pom_url", projectPom);
 
         createWorkItem(fields);
 
 
-      Method method = continuumWorker.getClass().getMethod("addMavenProject");
-      method.invoke(continuumWorker);
-      JSONObject output = (JSONObject)continuumWorker.getFields().get("__context_outputs__");
-      assertThat((Integer)output.get("continuum_project_id"), is(equalTo(project.getId())));
-      assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        Method method = continuumWorker.getClass().getMethod("addMavenProject");
+        method.invoke(continuumWorker);
+        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
+        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
 
     }
 
     private void setupBuildProjectMocks(int projectId, int buildDefId)
-            throws Exception
-    {
+            throws Exception {
         List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
         ProjectGroup group = new ProjectGroup();
         group.setName("HelloWorld");
@@ -224,8 +216,7 @@ public class ContinuumWorkerTest
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void testBuild() throws Exception
-    {
+    public void testBuild() throws Exception {
         int projectId = 1;
         int buildDefId = 1;
 
@@ -253,7 +244,7 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer)((JSONObject)continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
+        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
         assertThat(continuumWorker.getField("__error__"), is(nullValue()));
     }
 
@@ -262,8 +253,7 @@ public class ContinuumWorkerTest
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void testBuildWithProjectIdInContext() throws Exception
-    {
+    public void testBuildWithProjectIdInContext() throws Exception {
         int projectId = 8;
         int buildDefId = 1;
 
@@ -288,14 +278,13 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer)((JSONObject)continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
+        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
         assertThat(continuumWorker.getField("__error__"), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testBuildWithPreviousContextOutputs() throws Exception
-    {
+    public void testBuildWithPreviousContextOutputs() throws Exception {
 
         int projectId = 1;
         int buildDefId = 1;
@@ -329,14 +318,13 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer)((JSONObject)continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
+        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
         assertThat(continuumWorker.getField("__error__"), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testBuildWithPreviousContextOutputsAndChangeGoals() throws Exception
-    {
+    public void testBuildWithPreviousContextOutputsAndChangeGoals() throws Exception {
         int projectId = 1;
         int buildDefId = 1;
 
@@ -368,16 +356,14 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer)((JSONObject)continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
+        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
         assertThat(continuumWorker.getField("__error__"), is(nullValue()));
     }
 
 
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
-    public void testBuildWithAgentFacts() throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
-    {
+    public void testBuildWithAgentFacts() throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         ContinuumWorker continuumWorker = mock(ContinuumWorker.class);
         JSONObject fields = createContinuumFields();
         fields.put("project", "HelloWorld");
@@ -398,7 +384,7 @@ public class ContinuumWorkerTest
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertNull(continuumWorker.getField("__error__"),continuumWorker.getField("__error__"));
+        assertNull(continuumWorker.getField("__error__"), continuumWorker.getField("__error__"));
     }
 
     private static ProjectGroup createProjectGroup(String groupId, ProjectSummary project, int id) {
@@ -412,7 +398,7 @@ public class ContinuumWorkerTest
     }
 
     private static ProjectSummary createProject(String groupId, String name, int id) {
-        ProjectSummary project = new  ProjectSummary();
+        ProjectSummary project = new ProjectSummary();
         project.setId(id);
         project.setGroupId(groupId);
         project.setName(name);
