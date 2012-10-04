@@ -20,7 +20,9 @@ import org.json.simple.JSONObject;
  */
 public class ContinuumWorker extends MaestroWorker
 {
-    
+
+    static final String DUPLICATE_PROJECT_ERR = "Trying to add duplicate projects in the same project group";
+    static final int NO_PROJECT_GROUP = -1;
     private ContinuumXmlRpcClient client;
     private ContinuumXmlRpcClientFactory continuumXmlRpcClientFactory;
     
@@ -472,55 +474,37 @@ public class ContinuumWorker extends MaestroWorker
   
     @SuppressWarnings("unchecked")
     public void addMavenProject() {
-      try {
-        client = this.getClient();
-        ProjectGroup projectGroup = null;        
-        if(getField("group_name") != null && getField("group_name") != "") {
-          try{
-            writeOutput("Requesting Group " + getField("group_name") + " From Continuum\n");
-            projectGroup = getProjectGroup(getField("group_name"));
-            writeOutput("Found Group " + getField("group_name") + " In Continuum\n");
-          } catch (Exception e) {
-            writeOutput("Creating " + getField("group_name") + " In Continuum\n");
-            projectGroup = createProjectGroup();
-            writeOutput("Created " + getField("group_name") + " In Continuum\n");
-          }
-        }        
-        writeOutput("Processing Project In Continuum\n");
-        ProjectSummary projectSummary;
-        try{
-            if (projectGroup != null)
-                projectSummary = createMavenProject(projectGroup.getId());
-            else
-                projectSummary = createMavenProject();
-            if (projectSummary.getId() == 0) {
-                
-                ProjectGroup group = getProjectGroup(projectSummary.getProjectGroup().getName());
-                projectSummary = getProjectSummary(projectSummary.getName(), group);
-                writeOutput("Found Existing Project (" + projectSummary.getId() + ")\n");
-            } else {
-                writeOutput("Project Created (" + projectSummary.getId() + ")\n");
+        try {
+            client = this.getClient();
+            ProjectGroup projectGroup = null;
+            String groupName = getField("group_name");
+            if (groupName != null && !groupName.equals("")) {
+                try {
+                    writeOutput("Requesting Group " + groupName + " From Continuum\n");
+                    projectGroup = getProjectGroup(groupName);
+                    writeOutput("Found Group " + groupName + " In Continuum\n");
+                } catch (Exception e) {
+                    writeOutput("Creating " + groupName + " In Continuum\n");
+                    projectGroup = createProjectGroup();
+                    writeOutput("Created " + groupName + " In Continuum\n");
+                }
             }
-            
-            JSONObject outputData = (JSONObject)this.getFields().get("__context_outputs__");
-            if(outputData == null)
+            writeOutput("Processing Project In Continuum\n");
+            ProjectSummary projectSummary = createMavenProject(projectGroup);
+
+            JSONObject outputData = (JSONObject) this.getFields().get("__context_outputs__");
+            if (outputData == null)
                 outputData = new JSONObject();
             outputData.put("continuum_project_id", projectSummary.getId());
-            this.setField("continuum_project_id", projectSummary.getId());            
+            this.setField("continuum_project_id", projectSummary.getId());
             this.setField("__context_outputs__", outputData);
-        } catch(Exception e){
-          if(e.getMessage() != null && !e.getMessage().contains("Trying to add duplicate projects in the same project group")) {
-            throw new Exception(e);
-          }
-          writeOutput("Project Detected\n");
+
+
+            writeOutput("Successfully Processed Maven Project Project\n");
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.setError("Continuum Build Failed: " + e.getMessage());
         }
-        
-        
-        writeOutput("Successfully Processed Maven Project Project\n");
-      } catch (Exception e) {
-        e.printStackTrace();
-        this.setError("Continuum Build Failed: " + e.getMessage());   
-      }
     }
 
     @SuppressWarnings("unchecked")
@@ -591,50 +575,52 @@ public class ContinuumWorker extends MaestroWorker
       }
       return project;
     }
-    
-    private ProjectSummary createMavenProject(int projectGroupId) throws Exception { 
-      AddingResult result;
-      if(Boolean.parseBoolean(getField("single_directory"))){
-       result = client.addMavenTwoProjectAsSingleProject(getField("pom_url"), projectGroupId);
-      }else{
-        result = client.addMavenTwoProject(getField("pom_url"), projectGroupId);
-      }
+
+    private ProjectSummary createMavenProject(ProjectGroup projectGroup) throws Exception {
+        int projectGroupId = projectGroup != null ? projectGroup.getId() : NO_PROJECT_GROUP;
+
+        AddingResult result;
+        if (Boolean.parseBoolean(getField("single_directory"))) {
+            result = client.addMavenTwoProjectAsSingleProject(getField("pom_url"), projectGroupId);
+        } else {
+            result = client.addMavenTwoProject(getField("pom_url"), projectGroupId);
+        }
+        ProjectSummary project = null;
+        if (result.getProjects() != null && !result.getProjects().isEmpty()) {
+            project = result.getProjects().get(0);
+        }
         if (result.hasErrors()) {
-            if (result.getProjects() == null || result.getProjects().isEmpty()){
-                throw new Exception(result.getErrorsAsString());
-            }
-            else {
+            if (result.getErrorsAsString().contains(DUPLICATE_PROJECT_ERR)) {
+                if (project != null) {
+                    ProjectGroup group = projectGroup != null ? projectGroup : getProjectGroup(project.getProjectGroup().getName());
+                    project = getProjectSummary(project.getName(), group);
+                    writeOutput("Found Existing Project (" + project.getId() + ")\n");
+                } else {
+                    if (projectGroup != null) {
+                        project = getProjectSummary(project.getName(), projectGroup);
+                        writeOutput("Found Existing Project (" + project.getId() + ")\n");
+                    } else {
+                        throw new Exception(result.getErrorsAsString() + "; unable to determine conflicting project");
+                    }
+                }
+            } else {
                 writeOutput("Found projects, but had errors:\n" + result.getErrorsAsString());
                 writeOutput("Projects: " + result.getProjects() + "\n");
                 writeOutput("Project Groups: " + result.getProjectGroups() + "\n");
+                throw new Exception(result.getErrorsAsString() + "; unable to determine conflicting project");
             }
-        }
-
-        ProjectSummary project = result.getProjects().get(0);
-      if( project == null) {
-        throw new Exception("Unable To Create Project In " + getField("group_name"));
-      }
-      return project;
-    }
-    
-    private ProjectSummary createMavenProject() throws Exception { 
-        AddingResult result;
-        
-        result = client.addMavenTwoProject(getField("pom_url"));
-//        if(result.hasErrors() && (result.getProjects() == null || result.getProjects().isEmpty())) {
-//          throw new Exception(result.getErrorsAsString());
-//        } 
-        
-        ProjectSummary project = result.getProjects().get(0);
-        if( project == null) {
-          throw new Exception("Unable To Create Project In " + getField("group_name"));
+        } else {
+            if (project == null) {
+                throw new Exception("Unable To Create Project In " + getField("group_name"));
+            }
+            writeOutput("Project Created (" + project.getId() + ")\n");
         }
         return project;
-      }
-//
-//    @Override
-//    public void writeOutput(String output) {
-//        super.writeOutput(output);    //To change body of overridden methods use File | Settings | File Templates.
-//        System.out.print(output);
-//    }
+    }
+
+    @Override
+    public void writeOutput(String output) {
+        super.writeOutput(output);    //To change body of overridden methods use File | Settings | File Templates.
+        System.out.print(output);
+    }
 }

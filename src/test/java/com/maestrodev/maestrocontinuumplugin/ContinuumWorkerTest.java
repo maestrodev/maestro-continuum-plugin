@@ -8,6 +8,7 @@ import org.apache.maven.continuum.xmlrpc.project.BuildResult;
 import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
 import org.apache.maven.continuum.xmlrpc.project.Project;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroup;
+import org.apache.maven.continuum.xmlrpc.project.ProjectGroupSummary;
 import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
 import org.fusesource.stomp.client.BlockingConnection;
 import org.json.simple.JSONObject;
@@ -71,18 +72,21 @@ public class ContinuumWorkerTest {
     public void testCreateMavenProject() throws Exception {
         List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
         ProjectGroup group = new ProjectGroup();
+        group.setId(1);
         group.setName("HelloWorld");
         group.setGroupId("com.maestrodev");
         projectGroups.add(group);
 
         when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
 
+        String projectPom = "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml";
+        mockProjectAddition(projectPom, createProject("com.maestrodev", "projectName", 1), 1);
 
         JSONObject fields = createContinuumFields();
         fields.put("group_name", "HelloWorld");
         fields.put("group_id", "com.maestrodev");
         fields.put("group_description", "clean test install package");
-        fields.put("pom_url", "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml");
+        fields.put("pom_url", projectPom);
 
         createWorkItem(fields);
 
@@ -92,6 +96,109 @@ public class ContinuumWorkerTest {
 
         assertNotNull(continuumWorker.getField("__context_outputs__"));
         assertNull(continuumWorker.getField("__error__"), continuumWorker.getField("__error__"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testCreateDuplicateMavenProjectDifferentGroups() throws Exception {
+        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
+        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
+        String name = "HelloWorld";
+
+        String groupId = "testCreateDuplicateMavenProjectDifferentGroups";
+        ProjectSummary project = createProject(groupId, name, 1);
+        ProjectGroup group = createProjectGroup(groupId, project, 1);
+        projectGroups.add(group);
+
+        String groupId2 = "testCreateDuplicateMavenProjectDifferentGroups2";
+        ProjectSummary project2 = createProject(groupId2, name, 2);
+        ProjectGroup group2 = createProjectGroup(groupId2, project2, 2);
+        projectGroups.add(group2);
+
+        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
+        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
+        when(continuumXmlRpcClient.getProjectGroup(2)).thenReturn(group2);
+
+        mockProjectAddition(projectPom, project, 1);
+        mockProjectAddition(projectPom, project2, 2);
+
+        JSONObject fields = createContinuumFields();
+        fields.put("pom_url", projectPom);
+        fields.put("group_name", group.getName());
+        fields.put("group_id", group.getGroupId());
+        fields.put("group_description", "Description");
+        createWorkItem(fields);
+
+        Method method = continuumWorker.getClass().getMethod("addMavenProject");
+        method.invoke(continuumWorker);
+        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
+        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+
+        fields = createContinuumFields();
+        fields.put("pom_url", projectPom);
+        fields.put("group_name", group2.getName());
+        fields.put("group_id", group2.getGroupId());
+        fields.put("group_description", "Description");
+        createWorkItem(fields);
+
+        method = continuumWorker.getClass().getMethod("addMavenProject");
+        method.invoke(continuumWorker);
+        output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
+        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project2.getId())));
+        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testCreateDuplicateExistingMavenProjectDifferentGroups() throws Exception {
+        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
+        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
+        String name = "HelloWorld";
+
+        String groupId = "testCreateDuplicateExistingMavenProjectDifferentGroups";
+        ProjectSummary project = createProject(groupId, name, 1);
+        ProjectGroup group = createProjectGroup(groupId, project, 1);
+        projectGroups.add(group);
+
+        String groupId2 = "testCreateDuplicateExistingMavenProjectDifferentGroups2";
+        ProjectSummary project2 = createProject(groupId2, name, 2);
+        ProjectGroup group2 = createProjectGroup(groupId2, project2, 2);
+        projectGroups.add(group2);
+
+        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
+        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
+        when(continuumXmlRpcClient.getProjectGroup(2)).thenReturn(group2);
+
+        mockProjectDuplicate(projectPom, project);
+
+        JSONObject fields = createContinuumFields();
+        fields.put("pom_url", projectPom);
+        fields.put("group_name", group.getName());
+        fields.put("group_id", group.getGroupId());
+        fields.put("group_description", "Description");
+        createWorkItem(fields);
+
+        Method method = continuumWorker.getClass().getMethod("addMavenProject");
+        method.invoke(continuumWorker);
+        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
+        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+
+        mockProjectDuplicate(projectPom, project2);
+
+        fields = createContinuumFields();
+        fields.put("pom_url", projectPom);
+        fields.put("group_name", group2.getName());
+        fields.put("group_id", group2.getGroupId());
+        fields.put("group_description", "Description");
+        createWorkItem(fields);
+
+        method = continuumWorker.getClass().getMethod("addMavenProject");
+        method.invoke(continuumWorker);
+        output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
+        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project2.getId())));
+        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
@@ -111,13 +218,7 @@ public class ContinuumWorkerTest {
 
         when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
 
-        ProjectSummary duplicateProject = new ProjectSummary();
-        duplicateProject.setId(0);
-        duplicateProject.setName("HelloWorld");
-        duplicateProject.setProjectGroup(group);
-
-        AddingResult duplicateResult = mockProjectAddition(projectPom, project);
-        duplicateResult.addError("Trying to add duplicate projects in the same project group");
+        mockProjectDuplicate(projectPom, project, group, ContinuumWorker.NO_PROJECT_GROUP);
         when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
 
         JSONObject fields = createContinuumFields();
@@ -130,7 +231,6 @@ public class ContinuumWorkerTest {
         JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
         assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
         assertThat(continuumWorker.getField("__error__"), is(nullValue()));
-
     }
 
     @SuppressWarnings("unchecked")
@@ -262,7 +362,7 @@ public class ContinuumWorkerTest {
         fields.put("params", params);
 
         JSONObject contextOutputs = new JSONObject();
-        contextOutputs.put("continuum_project_id", new Long(projectId));
+        contextOutputs.put("continuum_project_id", (long) projectId);
         fields.put("__context_outputs__", contextOutputs);
 
         createWorkItem(fields);
@@ -388,7 +488,6 @@ public class ContinuumWorkerTest {
         return group;
     }
 
-
     private static ProjectSummary createProject(String groupId, String name, int id) {
         ProjectSummary project = new ProjectSummary();
         project.setId(id);
@@ -396,6 +495,7 @@ public class ContinuumWorkerTest {
         project.setName(name);
         return project;
     }
+
 
     @SuppressWarnings("unchecked")
     private static JSONObject createContinuumFields() {
@@ -414,6 +514,7 @@ public class ContinuumWorkerTest {
         createWorkItem(continuumWorker, fields);
     }
 
+    @SuppressWarnings("unchecked")
     private void createWorkItem(ContinuumWorker continuumWorker, JSONObject fields) {
         JSONObject workitem = new JSONObject();
         workitem.put("fields", fields);
@@ -421,15 +522,27 @@ public class ContinuumWorkerTest {
     }
 
     private AddingResult mockProjectAddition(String projectPom, ProjectSummary project) throws Exception {
-        AddingResult result = new AddingResult();
-        result.addProject(project);
-        when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(result);
-        return result;
+        return mockProjectAddition(projectPom, project, ContinuumWorker.NO_PROJECT_GROUP);
     }
 
-    private void mockProjectAddition(String projectPom, ProjectSummary project, int projectGroupId) throws Exception {
+    private AddingResult mockProjectAddition(String projectPom, ProjectSummary project, int projectGroupId) throws Exception {
         AddingResult result = new AddingResult();
         result.addProject(project);
         when(continuumXmlRpcClient.addMavenTwoProject(projectPom, projectGroupId)).thenReturn(result);
+        return result;
+    }
+
+    private void mockProjectDuplicate(String projectPom, ProjectSummary project) throws Exception {
+        mockProjectDuplicate(projectPom, project, project.getProjectGroup(), project.getProjectGroup().getId());
+    }
+
+    private void mockProjectDuplicate(String projectPom, ProjectSummary project, ProjectGroupSummary projectGroup, int projectGroupId) throws Exception {
+        ProjectSummary projectSummary = new ProjectSummary();
+        projectSummary.setId(0);
+        projectSummary.setGroupId(project.getGroupId());
+        projectSummary.setName(project.getName());
+        projectSummary.setProjectGroup(projectGroup);
+        AddingResult result = mockProjectAddition(projectPom, projectSummary, projectGroupId);
+        result.addError(ContinuumWorker.DUPLICATE_PROJECT_ERR);
     }
 }
