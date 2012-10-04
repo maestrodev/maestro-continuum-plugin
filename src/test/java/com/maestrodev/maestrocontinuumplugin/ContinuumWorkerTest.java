@@ -116,19 +116,14 @@ public class ContinuumWorkerTest {
         duplicateProject.setName("HelloWorld");
         duplicateProject.setProjectGroup(group);
 
-
-        AddingResult duplicateResult = new AddingResult();
+        AddingResult duplicateResult = mockProjectAddition(projectPom, project);
         duplicateResult.addError("Trying to add duplicate projects in the same project group");
-        duplicateResult.addProject(duplicateProject);
-
-        when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(duplicateResult);
         when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
 
         JSONObject fields = createContinuumFields();
         fields.put("pom_url", projectPom);
 
         createWorkItem(fields);
-
 
         Method method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
@@ -146,15 +141,12 @@ public class ContinuumWorkerTest {
 
         ProjectSummary project = createProject("com.maestrodev", "HelloWorld", 1);
 
-        AddingResult result = new AddingResult();
-        result.addProject(project);
-        when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(result);
+        mockProjectAddition(projectPom, project);
 
         JSONObject fields = createContinuumFields();
         fields.put("pom_url", projectPom);
 
         createWorkItem(fields);
-
 
         Method method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
@@ -360,7 +352,6 @@ public class ContinuumWorkerTest {
         assertThat(continuumWorker.getField("__error__"), is(nullValue()));
     }
 
-
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testBuildWithAgentFacts() throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -397,6 +388,7 @@ public class ContinuumWorkerTest {
         return group;
     }
 
+
     private static ProjectSummary createProject(String groupId, String name, int id) {
         ProjectSummary project = new ProjectSummary();
         project.setId(id);
@@ -426,5 +418,18 @@ public class ContinuumWorkerTest {
         JSONObject workitem = new JSONObject();
         workitem.put("fields", fields);
         continuumWorker.setWorkitem(workitem);
+    }
+
+    private AddingResult mockProjectAddition(String projectPom, ProjectSummary project) throws Exception {
+        AddingResult result = new AddingResult();
+        result.addProject(project);
+        when(continuumXmlRpcClient.addMavenTwoProject(projectPom)).thenReturn(result);
+        return result;
+    }
+
+    private void mockProjectAddition(String projectPom, ProjectSummary project, int projectGroupId) throws Exception {
+        AddingResult result = new AddingResult();
+        result.addProject(project);
+        when(continuumXmlRpcClient.addMavenTwoProject(projectPom, projectGroupId)).thenReturn(result);
     }
 }
