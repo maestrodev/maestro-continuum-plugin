@@ -121,16 +121,18 @@ public class ContinuumWorkerTest
         List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
         ProjectGroup group = new ProjectGroup();
         group.setId(1);
-        group.setName("HelloWorld");
+        group.setName("HelloGroupWorld");
         group.setGroupId("com.maestrodev");
         group.addProject(project);
         projectGroups.add(group);
+        project.setProjectGroup(group);
         
         when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
         
         ProjectSummary duplicateProject = new  ProjectSummary();
         duplicateProject.setId(0);
         duplicateProject.setName("HelloWorld");
+        duplicateProject.setProjectGroup(group);
        
        
        AddingResult duplicateResult = new AddingResult();

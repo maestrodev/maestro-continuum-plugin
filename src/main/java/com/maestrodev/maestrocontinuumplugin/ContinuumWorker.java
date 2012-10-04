@@ -495,7 +495,7 @@ public class ContinuumWorker extends MaestroWorker
                 projectSummary = createMavenProject();
             if (projectSummary.getId() == 0) {
                 
-                ProjectGroup group = getProjectGroup(projectSummary.getName());
+                ProjectGroup group = getProjectGroup(projectSummary.getProjectGroup().getName());
                 projectSummary = getProjectSummary(projectSummary.getName(), group);
                 writeOutput("Found Existing Project (" + projectSummary.getId() + ")\n");
             } else {
