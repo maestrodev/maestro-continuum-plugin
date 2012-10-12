@@ -249,7 +249,7 @@ public class ContinuumWorker extends MaestroWorker
         Map facts = (Map)(getFields().get("facts"));
         String agentName = getAgentName(facts);
         
-        writeOutput("Configuring Continuum Build Agent At " + (String)facts.get("continuum_build_agent"));
+        writeOutput("Configuring Continuum Build Agent At " + (String)facts.get("continuum_build_agent") + "\n");
         BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
         
         writeOutput("Finding Build Environment "+ agentName+" \n");        
