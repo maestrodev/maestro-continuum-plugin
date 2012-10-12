@@ -237,18 +237,28 @@ public class ContinuumWorker extends MaestroWorker
               "xmlrpc");
       return url;
     }
-
+    
+    @SuppressWarnings("rawtypes")
+    private String getAgentName(Map facts){
+      return (String)facts.get("operatingsystem") + "-" + (String)facts.get("ipaddress");
+    }
+    
   private Profile setupBuildAgent(Profile profile) throws Exception {
     try{
         writeOutput("Using Agent Facts To Locate Continuum Build Agent\n");
-        profile = findProfile(getField("composition"));
-        @SuppressWarnings("rawtypes")
         Map facts = (Map)(getFields().get("facts"));
+        String agentName = getAgentName(facts);
+        
+        writeOutput("Configuring Continuum Build Agent At " + (String)facts.get("continuum_build_agent"));
         BuildAgentConfiguration buildAgent = this.getBuildAgent((String)facts.get("continuum_build_agent"));
         
+        writeOutput("Finding Build Environment "+ agentName+" \n");        
+        
+        profile = findProfile(agentName);
+        
         if(profile == null){
-            writeOutput("Build Environment Not Found, Created New ("+getField("composition")+")\n");
-            profile = this.createProfile(getField("composition"), this.createBuildAgentGroup(getField("composition"), buildAgent).getName());
+            writeOutput("Build Environment Not Found, Created New ["+agentName+"]\n");
+            profile = this.createProfile(agentName, this.createBuildAgentGroup(agentName, buildAgent).getName());
         } else {
 //                        verify build agent is in group
             writeOutput("Build Environment Found, Verifying Agent\n");
