@@ -1,118 +1,119 @@
-[{ 
-    "name" : "continuum",
-    "description" : "Run A Continuum Build Definition",
-    "author": "Kelly Plummer",
-    "version": "${project.version}-${buildNumber}",
-    "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
-    "type":"java",
-    "dependencies":[
-      {
-        "name":"maestro-continuum-plugin-${project.version}.jar"
-      }
-    ],
-    "task":{
-      "command" : "/continuum/build",    
-      "inputs" : {
-        "project_name" : {"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project To Build"},
-        "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project Group"},
-        "goals":{"value" : "clean deploy", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
-        "arguments":{"value" : "--batch-mode -e", "type" : "String", "required" : false, "description":"Arguments To Pass To Maven Or The Build File"},
-        "build_file":{"value" : "", "type" : "String", "required" : true, "description":"Maven Pom Or Shell Executable"},
-        "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
-        "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
-        "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
-        "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
-        "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
-        "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
-      },
-      "outputs" : {},
-      "tool_name":"Build",
-      "icon":"continuum.png"
-    },
-    "source_types": [
-      {
-        "name" : "Continuum",
-        "options" : {
-          "host": "String",
-          "port":"Integer",
-          "username": "String",
-          "password": "Password",
-          "web_path":"String"
+{
+  "source_types": [
+        {
+          "name" : "Continuum",
+          "options" : {
+            "host": "String",
+            "port":"Integer",
+            "username": "String",
+            "password": "Password",
+            "web_path":"String"
+          }
+        }],
+  "tasks" : [{ 
+      "name" : "continuum",
+      "description" : "Run A Continuum Build Definition",
+      "author": "Kelly Plummer",
+      "version": "${project.version}-${buildNumber}",
+      "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
+      "type":"java",
+      "dependencies":[
+        {
+          "name":"maestro-continuum-plugin-${project.version}.jar"
         }
-      }]
-  },
-  { 
-    "name" : "continuum add shell project",
-    "description" : "Add a shell project to a Continuum build server",
-    "author": "Kelly Plummer",
-    "version": "${project.version}-${buildNumber}",
-    "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
-    "type":"java",
-    "dependencies":[
-      {
-        "name":"maestro-continuum-plugin-${project.version}.jar"
+      ],
+      "task":{
+        "command" : "/continuum/build",    
+        "inputs" : {
+          "project_name" : {"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project To Build"},
+          "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project Group"},
+          "goals":{"value" : "clean deploy", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
+          "arguments":{"value" : "--batch-mode -e", "type" : "String", "required" : false, "description":"Arguments To Pass To Maven Or The Build File"},
+          "build_file":{"value" : "", "type" : "String", "required" : true, "description":"Maven Pom Or Shell Executable"},
+          "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
+          "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
+          "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
+          "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
+          "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
+          "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
+        },
+        "outputs" : {},
+        "tool_name":"Build",
+        "icon":"continuum.png"
       }
-    ],
-    "task":{
-      "command" : "/continuum/addShellProject",    
-      "inputs" : {
-        "project_name" : {"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project To Build"},
-        "group_name":{"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project Group"},
-        "group_id":{"value" : "", "type" : "String", "required" : true, "description":"Id Of The Group"},
-        "group_description":{"value" : "", "type" : "String", "required" : true, "description":"Description Of The Group"},
-        "project_description":{"value" : "", "type" : "String", "required" : true, "description":"Description For The Project"},
-        "project_version":{"value" : "", "type" : "String", "required" : true, "description":"Version Of The Project"},
-        "scm_url":{"value" : "", "type" : "String", "required" : true, "description":"Maven SCM Url"},
-        "scm_username":{"value" : "", "type" : "String", "required" : true, "description":"Username To Access SCM"},
-        "scm_password":{"value" : "", "type" : "Password", "required" : true, "description":"Password To Access SCM"},
-        "scm_use_cache":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use The SCM Credential Cache"},
-        "scm_branch":{"value" : "", "type" : "String", "required" : true, "description":"Repository Branch"},
-        "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
-        "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
-        "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
-        "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
-        "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
-        "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
-      },
-      "outputs" : {},
-      "tool_name":"Build",
-      "icon":"continuum.png"
-    }
-  },
-  { 
-    "name" : "continuum add maven project",
-    "description" : "Add a maven project to a Continuum build server",
-    "author": "Kelly Plummer",
-    "version": "${project.version}-${buildNumber}",
-    "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
-    "type":"java",
-    "dependencies":[
-      {
-        "name":"maestro-continuum-plugin-${project.version}.jar"
+    },
+    { 
+      "name" : "continuum add shell project",
+      "description" : "Add a shell project to a Continuum build server",
+      "author": "Kelly Plummer",
+      "version": "${project.version}-${buildNumber}",
+      "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
+      "type":"java",
+      "dependencies":[
+        {
+          "name":"maestro-continuum-plugin-${project.version}.jar"
+        }
+      ],
+      "task":{
+        "command" : "/continuum/addShellProject",    
+        "inputs" : {
+          "project_name" : {"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project To Build"},
+          "group_name":{"value" : "", "type" : "String", "required" : true, "description":"Name Of The Project Group"},
+          "group_id":{"value" : "", "type" : "String", "required" : true, "description":"Id Of The Group"},
+          "group_description":{"value" : "", "type" : "String", "required" : true, "description":"Description Of The Group"},
+          "project_description":{"value" : "", "type" : "String", "required" : true, "description":"Description For The Project"},
+          "project_version":{"value" : "", "type" : "String", "required" : true, "description":"Version Of The Project"},
+          "scm_url":{"value" : "", "type" : "String", "required" : true, "description":"Maven SCM Url"},
+          "scm_username":{"value" : "", "type" : "String", "required" : true, "description":"Username To Access SCM"},
+          "scm_password":{"value" : "", "type" : "Password", "required" : true, "description":"Password To Access SCM"},
+          "scm_use_cache":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use The SCM Credential Cache"},
+          "scm_branch":{"value" : "", "type" : "String", "required" : true, "description":"Repository Branch"},
+          "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
+          "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
+          "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
+          "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
+          "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
+          "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
+        },
+        "outputs" : {},
+        "tool_name":"Build",
+        "icon":"continuum.png"
       }
-    ],
-    "task":{
-      "command" : "/continuum/addMavenProject",    
-      "inputs" : {
-        "pom_url":{"value" : "", "type" : "String", "required" : true, "description":"Remote Url Of The Pom File"},
-        "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Group That Contains The Project"},
-        "group_id":{"value" : "", "type" : "String", "required" : false, "description":"Id Of The Group That Contains The Project"},
-        "group_description":{"value" : "", "type" : "String", "required" : false, "description":"Description Of The Group That Contains The Project"},
-        "single_directory":{"value" : true, "type" : "Boolean", "required" : true, "description":"Checkout multi-module project in single directory"},
-        "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
-        "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
-        "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
-        "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
-        "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
-        "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
-      },
-      "outputs" : {
-        "continuum_project_id": {"type" : "Integer" }
-      },
-      "tool_name":"Build",
-      "icon":"continuum.png"
+    },
+    { 
+      "name" : "continuum add maven project",
+      "description" : "Add a maven project to a Continuum build server",
+      "author": "Kelly Plummer",
+      "version": "${project.version}-${buildNumber}",
+      "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
+      "type":"java",
+      "dependencies":[
+        {
+          "name":"maestro-continuum-plugin-${project.version}.jar"
+        }
+      ],
+      "task":{
+        "command" : "/continuum/addMavenProject",    
+        "inputs" : {
+          "pom_url":{"value" : "", "type" : "String", "required" : true, "description":"Remote Url Of The Pom File"},
+          "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Group That Contains The Project"},
+          "group_id":{"value" : "", "type" : "String", "required" : false, "description":"Id Of The Group That Contains The Project"},
+          "group_description":{"value" : "", "type" : "String", "required" : false, "description":"Description Of The Group That Contains The Project"},
+          "single_directory":{"value" : true, "type" : "Boolean", "required" : true, "description":"Checkout multi-module project in single directory"},
+          "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
+          "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
+          "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
+          "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
+          "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
+          "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
+        },
+        "outputs" : {
+          "continuum_project_id": {"type" : "Integer" }
+        },
+        "tool_name":"Build",
+        "icon":"continuum.png"
+      }
     }
-  }
-]
-
+  ]
+}
       
