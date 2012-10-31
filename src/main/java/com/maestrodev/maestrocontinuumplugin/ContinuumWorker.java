@@ -312,6 +312,8 @@ public class ContinuumWorker extends MaestroWorker
         this.writeOutput("Waiting For Build To Start\n");
 
         while(project.getState() != ContinuumProjectState.BUILDING){
+            // TODO: need an appropriate way to cancel a build that hasn't started if we get a cancelled signal
+
             if(System.currentTimeMillis() - start >  timeout){
               BuildResult result = getBuildResult(project.getId());
               if(result == null){
@@ -363,6 +365,11 @@ public class ContinuumWorker extends MaestroWorker
                project.getState() != ContinuumProjectState.FAILED &&
                project.getState() != ContinuumProjectState.ERROR &&
                project.getState() != ContinuumProjectState.NEW){
+            if (isCancelled()) {
+                client.cancelCurrentBuild();
+                break;
+            }
+
             switch(project.getState()) {
               case ContinuumProjectState.CHECKEDOUT:
                 writeOutput("Source Code Checkout Complete\n");
@@ -485,6 +492,10 @@ public class ContinuumWorker extends MaestroWorker
         }
     }
 
+    private boolean isCancelled() {
+        // TODO: need a way in maestro-plugin to achieve this
+        return false;
+    }
 
     @SuppressWarnings("unchecked")
     public void addMavenProject() {
