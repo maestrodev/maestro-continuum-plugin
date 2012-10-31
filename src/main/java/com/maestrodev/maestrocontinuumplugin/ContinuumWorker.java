@@ -296,7 +296,7 @@ public class ContinuumWorker extends MaestroWorker
   }
     
     private Project triggerBuild(Project project, BuildDefinition buildDefinition) throws Exception{
-        
+
         BuildTrigger buildTrigger = new BuildTrigger();
         buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
         buildTrigger.setTriggeredBy(this.getField("username"));
@@ -376,6 +376,10 @@ public class ContinuumWorker extends MaestroWorker
               case ContinuumProjectState.WARNING:
                 writeOutput("Warning State Detected In Continuum\n");
                 break;
+              case ContinuumProjectState.BUILDING:
+                break;
+              default:
+                throw new Exception("Unexpected project state: " + project.getState());
             }
             
             Thread.sleep(5000);
@@ -481,7 +485,7 @@ public class ContinuumWorker extends MaestroWorker
         }
     }
 
-  
+
     @SuppressWarnings("unchecked")
     public void addMavenProject() {
         try {
