@@ -96,22 +96,21 @@ public class ContinuumWorkerTest {
         when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
 
         String projectPom = "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml";
-        mockProjectAddition(projectPom, createProject("com.maestrodev", "projectName", 1), 1);
+        mockProjectAddition(projectPom, createProject(group.getGroupId(), "projectName", 1), 1);
 
         JSONObject fields = createContinuumFields();
-        fields.put("group_name", "HelloWorld");
-        fields.put("group_id", "com.maestrodev");
+        fields.put("group_name", group.getName());
+        fields.put("group_id", group.getGroupId());
         fields.put("group_description", "clean test install package");
         fields.put("pom_url", projectPom);
 
         createWorkItem(fields);
 
-
         Method method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
 
-        assertNotNull(continuumWorker.getField("__context_outputs__"));
-        assertNull(continuumWorker.getField("__error__"), continuumWorker.getField("__error__"));
+        assertNotNull(getContinuumProjectId());
+        assertNull(continuumWorker.getError());
     }
 
     @SuppressWarnings("unchecked")
@@ -147,9 +146,8 @@ public class ContinuumWorkerTest {
 
         Method method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
-        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
-        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getError(), is(nullValue()));
 
         fields = createContinuumFields();
         fields.put("pom_url", projectPom);
@@ -160,9 +158,8 @@ public class ContinuumWorkerTest {
 
         method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
-        output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
-        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project2.getId())));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getContinuumProjectId(), is(equalTo(project2.getId())));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
@@ -197,9 +194,8 @@ public class ContinuumWorkerTest {
 
         Method method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
-        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
-        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getError(), is(nullValue()));
 
         mockProjectDuplicate(projectPom, project2);
 
@@ -212,9 +208,8 @@ public class ContinuumWorkerTest {
 
         method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
-        output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
-        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project2.getId())));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getContinuumProjectId(), is(equalTo(project2.getId())));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
@@ -227,7 +222,7 @@ public class ContinuumWorkerTest {
         ProjectGroup group = new ProjectGroup();
         group.setId(1);
         group.setName("HelloGroupWorld");
-        group.setGroupId("com.maestrodev");
+        group.setGroupId(project.getGroupId());
         group.addProject(project);
         projectGroups.add(group);
         project.setProjectGroup(group);
@@ -244,9 +239,8 @@ public class ContinuumWorkerTest {
 
         Method method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
-        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
-        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
@@ -266,10 +260,8 @@ public class ContinuumWorkerTest {
 
         Method method = continuumWorker.getClass().getMethod("addMavenProject");
         method.invoke(continuumWorker);
-        JSONObject output = (JSONObject) continuumWorker.getFields().get("__context_outputs__");
-        assertThat((Integer) output.get("continuum_project_id"), is(equalTo(project.getId())));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
-
+        assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     private void setupBuildProjectMocks(int projectId, int buildDefId)
@@ -330,7 +322,6 @@ public class ContinuumWorkerTest {
 
         setupBuildProjectMocks(projectId, buildDefId);
 
-
         JSONObject fields = createContinuumFields();
         fields.put("group_name", "HelloWorld");
         fields.put("group_id", "com.maestrodev");
@@ -345,15 +336,13 @@ public class ContinuumWorkerTest {
         params.put("composition_task_id", 1L);
         fields.put("params", params);
 
-
         createWorkItem(fields);
-
 
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     /**
@@ -374,20 +363,20 @@ public class ContinuumWorkerTest {
         fields.put("facts", new JSONObject());
 
         JSONObject params = new JSONObject();
-        params.put("composition_task_id", 1L);
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
         fields.put("params", params);
 
         JSONObject contextOutputs = new JSONObject();
-        contextOutputs.put("continuum_project_id", (long) projectId);
-        fields.put("__context_outputs__", contextOutputs);
+        contextOutputs.put(ContinuumWorker.CONTINUUM_PROJECT_ID, (long) projectId);
+        fields.put(ContinuumWorker.CONTEXT_OUTPUTS, contextOutputs);
 
         createWorkItem(fields);
 
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
@@ -398,7 +387,6 @@ public class ContinuumWorkerTest {
         int buildDefId = 1;
 
         setupBuildProjectMocks(projectId, buildDefId);
-
 
         JSONObject fields = createContinuumFields();
         fields.put("group_name", "HelloWorld");
@@ -411,23 +399,21 @@ public class ContinuumWorkerTest {
         fields.put("facts", new JSONObject());
 
         JSONObject previousContextOutputs = new JSONObject();
+        previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, buildDefId);
 
-        previousContextOutputs.put("build_definition_id", buildDefId);
-
-        fields.put("__previous_context_outputs__", previousContextOutputs);
+        fields.put(ContinuumWorker.PREVIOUS_CONTEXT_OUTPUTS, previousContextOutputs);
 
         JSONObject params = new JSONObject();
-        params.put("composition_task_id", 1L);
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
         fields.put("params", params);
 
         createWorkItem(fields);
 
-
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     @SuppressWarnings("unchecked")
@@ -437,7 +423,6 @@ public class ContinuumWorkerTest {
         int buildDefId = 1;
 
         setupBuildProjectMocks(projectId, buildDefId);
-
 
         JSONObject fields = createContinuumFields();
         fields.put("group_name", "HelloWorld");
@@ -450,22 +435,20 @@ public class ContinuumWorkerTest {
         fields.put("facts", new JSONObject());
 
         JSONObject previousContextOutputs = new JSONObject();
+        previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, buildDefId);
+        fields.put(ContinuumWorker.PREVIOUS_CONTEXT_OUTPUTS, previousContextOutputs);
 
-        previousContextOutputs.put("build_definition_id", buildDefId);
-
-        fields.put("__previous_context_outputs__", previousContextOutputs);
         JSONObject params = new JSONObject();
-        params.put("composition_task_id", 1L);
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
         fields.put("params", params);
 
         createWorkItem(fields);
 
-
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertThat((Integer) ((JSONObject) continuumWorker.getFields().get("__context_outputs__")).get("build_definition_id"), is(buildDefId));
-        assertThat(continuumWorker.getField("__error__"), is(nullValue()));
+        assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -482,7 +465,7 @@ public class ContinuumWorkerTest {
         Map agentFacts = new JSONObject();
 
         agentFacts.put("app_scan", "V8.5");
-        agentFacts.put("continuum_build_agent", "http://localhost:9001/continuum-buildagent/xmlrpc");
+        agentFacts.put(ContinuumWorker.FACT_CONTINUUM_BUILD_AGENT, "http://localhost:9001/continuum-buildagent/xmlrpc");
 
         fields.put("facts", agentFacts);
 
@@ -491,7 +474,7 @@ public class ContinuumWorkerTest {
         Method method = continuumWorker.getClass().getMethod("build");
         method.invoke(continuumWorker);
 
-        assertNull(continuumWorker.getField("__error__"), continuumWorker.getField("__error__"));
+        assertNull(continuumWorker.getError());
     }
 
     private static ProjectGroup createProjectGroup(String groupId, ProjectSummary project, int id) {
@@ -512,7 +495,6 @@ public class ContinuumWorkerTest {
         return project;
     }
 
-
     @SuppressWarnings("unchecked")
     private static JSONObject createContinuumFields() {
         JSONObject fields = new JSONObject();
@@ -522,7 +504,7 @@ public class ContinuumWorkerTest {
         fields.put("password", "admin0");
         fields.put("web_path", "/continuum");
         fields.put("use_ssl", false);
-        fields.put("__context_outputs__", new JSONObject());
+        fields.put(ContinuumWorker.CONTEXT_OUTPUTS, new JSONObject());
         return fields;
     }
 
@@ -560,5 +542,15 @@ public class ContinuumWorkerTest {
         projectSummary.setProjectGroup(projectGroup);
         AddingResult result = mockProjectAddition(projectPom, projectSummary, projectGroupId);
         result.addError(ContinuumWorker.DUPLICATE_PROJECT_ERR);
+    }
+
+    private Integer getBuildDefinitionId() {
+        JSONObject output = continuumWorker.getContext();
+        return (Integer) output.get(ContinuumWorker.BUILD_DEFINITION_ID);
+    }
+
+    private Integer getContinuumProjectId() {
+        JSONObject output = continuumWorker.getContext();
+        return (Integer) output.get(ContinuumWorker.CONTINUUM_PROJECT_ID);
     }
 }

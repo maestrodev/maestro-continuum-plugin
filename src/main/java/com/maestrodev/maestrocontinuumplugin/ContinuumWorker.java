@@ -18,6 +18,7 @@ package com.maestrodev.maestrocontinuumplugin;
 
 import com.maestrodev.MaestroWorker;
 import com.maestrodev.StompConnectionFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
 import org.apache.maven.continuum.xmlrpc.project.AddingResult;
@@ -39,14 +40,32 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Hello world!
  */
 public class ContinuumWorker extends MaestroWorker {
+    private static Logger logger = Logger.getLogger(ContinuumWorker.class.getName());
 
     static final String DUPLICATE_PROJECT_ERR = "Trying to add duplicate projects in the same project group";
     static final int NO_PROJECT_GROUP = -1;
+    static final String MAESTRO_SCHEDULE_NAME = "MAESTRO_SCHEDULE";
+
+    static final String PARAMS_COMPOSITION_TASK_ID = "composition_task_id";
+
+    static final String CONTEXT_OUTPUTS = "__context_outputs__";
+    static final String PREVIOUS_CONTEXT_OUTPUTS = "__previous_context_outputs__";
+
+    static final String CONTINUUM_PROJECT_ID = "continuum_project_id";
+    static final String BUILD_DEFINITION_ID = "build_definition_id";
+    static final String BUILD_ID = "build_id";
+
+    static final String FACT_OPERATINGSYSTEM = "operatingsystem";
+    static final String FACT_IPADDRESS = "ipaddress";
+    static final String FACT_CONTINUUM_BUILD_AGENT = "continuum_build_agent";
+
     private ContinuumXmlRpcClient client;
     private ContinuumXmlRpcClientFactory continuumXmlRpcClientFactory;
 
@@ -73,8 +92,7 @@ public class ContinuumWorker extends MaestroWorker {
                 buildAgent.setEnabled(true);
                 client.updateBuildAgent(buildAgent);
                 if (!buildAgent.isEnabled()) {
-                    throw new Exception("Build Agent " + buildAgent.getUrl() +
-                            " Is Currently Not Enabled");
+                    throw new Exception("Build Agent " + buildAgent.getUrl() + " Is Currently Not Enabled");
                 }
                 return buildAgent;
             }
@@ -86,9 +104,7 @@ public class ContinuumWorker extends MaestroWorker {
         buildAgentConfiguration.setEnabled(true);
         buildAgentConfiguration.setUrl(url);
 
-
         buildAgentConfiguration = client.addBuildAgent(buildAgentConfiguration);
-
 
         if (!buildAgentConfiguration.isEnabled()) {
             throw new Exception("Unable To Find Build Agent At " + url);
@@ -97,7 +113,9 @@ public class ContinuumWorker extends MaestroWorker {
         return buildAgentConfiguration;
     }
 
-    private BuildAgentGroupConfiguration createBuildAgentGroup(String name, BuildAgentConfiguration buildAgentConfiguration) throws Exception {
+    private BuildAgentGroupConfiguration createBuildAgentGroup(String name,
+                                                               BuildAgentConfiguration buildAgentConfiguration)
+            throws Exception {
         BuildAgentGroupConfiguration buildAgentGroupConfiguration = new BuildAgentGroupConfiguration();
         buildAgentGroupConfiguration.setName(name);
 
@@ -118,12 +136,12 @@ public class ContinuumWorker extends MaestroWorker {
         return profile;
     }
 
-
     private Profile findProfile(String name) throws Exception {
         try {
             return client.getProfileWithName(name);
         } catch (Exception e) {
             writeOutput("Unable To Locate Profile With Name " + name);
+            logger.warning(e.getLocalizedMessage());
         }
 
         return null;
@@ -131,24 +149,21 @@ public class ContinuumWorker extends MaestroWorker {
 
     private ContinuumXmlRpcClient getClient() throws MalformedURLException {
         URL url = getUrl();
-        this.writeOutput("Using Continuum At " + url.toString() + "\n");
-        return continuumXmlRpcClientFactory.getClient(url, this.getField("username"),
-                this.getField("password"));
+        writeOutput("Using Continuum At " + url.toString() + "\n");
+        return continuumXmlRpcClientFactory.getClient(url, getUsername(), getPassword());
     }
-
 
     private ProjectGroup getProjectGroup(String projectGroupName) throws Exception {
         List<ProjectGroup> projectGroups = client.getAllProjectGroupsWithAllDetails();
 
         for (ProjectGroup projectGroup : projectGroups) {
-            if (projectGroup.getName().equals(projectGroupName) ||
-                    projectGroup.getGroupId().equals(projectGroupName))
+            if (projectGroup.getName().equals(projectGroupName) || projectGroup.getGroupId().equals(projectGroupName)) {
                 return projectGroup;
+            }
         }
 
         throw new Exception("Unable To Find Project Group " + projectGroupName);
     }
-
 
     private Project getProjectFromProjectGroup(String projectName, ProjectGroup projectGroup) throws Exception {
 
@@ -169,7 +184,9 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
 
-    private BuildDefinition getBuildDefinitionFromId(int buildDefinitionId, String goals, String arguments, String buildFile, Project project, Profile profile) throws Exception {
+    private BuildDefinition getBuildDefinitionFromId(int buildDefinitionId, String goals, String arguments,
+                                                     String buildFile, Project project, Profile profile)
+            throws Exception {
         BuildDefinition buildDefinition = client.getBuildDefinition(buildDefinitionId);
 
         buildDefinition.setGoals(goals);
@@ -186,7 +203,9 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
 
-    private BuildDefinition getBuildDefinitionFromProject(String goals, String arguments, String buildFile, Project project, Profile profile, Long taskId) throws Exception {
+    private BuildDefinition getBuildDefinitionFromProject(String goals, String arguments, String buildFile,
+                                                          Project project, Profile profile, Long taskId)
+            throws Exception {
         List<BuildDefinition> buildDefinitions = project.getBuildDefinitions();
         String description = "Build Definition Generated By Maestro 4, task ID: " + taskId;
 
@@ -208,12 +227,11 @@ public class ContinuumWorker extends MaestroWorker {
         }
         boolean update = false;
         if (buildDefinition == null) {
-            this.writeOutput("Unable To Detect Build Definition Creation Will Begin\n");
+            writeOutput("Unable To Detect Build Definition Creation Will Begin\n");
             buildDefinition = new BuildDefinition();
-        } else if (!goals.equals(buildDefinition.getGoals()) ||
-                !arguments.equals(buildDefinition.getArguments()) ||
+        } else if (!goals.equals(buildDefinition.getGoals()) || !arguments.equals(buildDefinition.getArguments()) ||
                 !buildFile.equals(buildDefinition.getBuildFile())) {
-            this.writeOutput("Build Definition Out of Date Update Will Begin\n");
+            writeOutput("Build Definition Out of Date Update Will Begin\n");
 
             update = true;
         } else {
@@ -235,7 +253,6 @@ public class ContinuumWorker extends MaestroWorker {
             buildDefinition.setType("shell");
         }
 
-
         if (profile != null) {
             buildDefinition.setProfile(profile);
         }
@@ -252,29 +269,16 @@ public class ContinuumWorker extends MaestroWorker {
         }
     }
 
-    private URL getUrl() throws MalformedURLException {
-        URL url;
-        String scheme = "http" + (Boolean.parseBoolean(this.getField("use_ssl")) ? "s" : "");
-        url = new URL(scheme + "://" + this.getField("host") + ":" +
-                this.getField("port") + "/" +
-                this.getField("web_path").replaceAll("^\\/", "") + "/" +
-                "xmlrpc");
-        return url;
-    }
-
-    @SuppressWarnings("rawtypes")
-    private String getAgentName(Map facts) {
-        return (String) facts.get("operatingsystem") + "-" + (String) facts.get("ipaddress");
-    }
-
-    private Profile setupBuildAgent(Profile profile) throws Exception {
+    private Profile setupBuildAgent() throws Exception {
+        Profile profile;
         try {
             writeOutput("Using Agent Facts To Locate Continuum Build Agent\n");
-            Map facts = (Map) (getFields().get("facts"));
+            Map<String, String> facts = getFacts();
             String agentName = getAgentName(facts);
 
-            writeOutput("Configuring Continuum Build Agent At " + (String) facts.get("continuum_build_agent") + "\n");
-            BuildAgentConfiguration buildAgent = this.getBuildAgent((String) facts.get("continuum_build_agent"));
+            String continuumBuildAgent = facts.get(FACT_CONTINUUM_BUILD_AGENT);
+            writeOutput("Configuring Continuum Build Agent At " + continuumBuildAgent + "\n");
+            BuildAgentConfiguration buildAgent = getBuildAgent(continuumBuildAgent);
 
             writeOutput("Finding Build Environment " + agentName + " \n");
 
@@ -282,11 +286,13 @@ public class ContinuumWorker extends MaestroWorker {
 
             if (profile == null) {
                 writeOutput("Build Environment Not Found, Created New [" + agentName + "]\n");
-                profile = this.createProfile(agentName, this.createBuildAgentGroup(agentName, buildAgent).getName());
+                createBuildAgentGroup(agentName, buildAgent);
+                profile = createProfile(agentName, agentName);
             } else {
-//                        verify build agent is in group
+                // verify build agent is in group
                 writeOutput("Build Environment Found, Verifying Agent\n");
-                BuildAgentGroupConfiguration buildAgentGroupConfiguration = client.getBuildAgentGroup(profile.getBuildAgentGroup());
+                BuildAgentGroupConfiguration buildAgentGroupConfiguration =
+                        client.getBuildAgentGroup(profile.getBuildAgentGroup());
                 boolean found = false;
 
                 for (BuildAgentConfiguration ba : buildAgentGroupConfiguration.getBuildAgents()) {
@@ -310,11 +316,11 @@ public class ContinuumWorker extends MaestroWorker {
     private BuildResult getBuildResult(int projectId) {
 
         BuildResult result = null;
-        try {
 
+        try {
             result = client.getLatestBuildResult(projectId);
-            ;
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Error getting latest build results: " + e.getLocalizedMessage(), e);
         }
 
         return result;
@@ -324,7 +330,7 @@ public class ContinuumWorker extends MaestroWorker {
 
         BuildTrigger buildTrigger = new BuildTrigger();
         buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
-        buildTrigger.setTriggeredBy(this.getField("username"));
+        buildTrigger.setTriggeredBy(getUsername());
         try {
             client.buildProject(project.getId(), buildDefinition.getId(), buildTrigger);
         } catch (Exception ex) {
@@ -334,7 +340,7 @@ public class ContinuumWorker extends MaestroWorker {
         int timeout = 60000;
         long start = System.currentTimeMillis();
 
-        this.writeOutput("Waiting For Build To Start\n");
+        writeOutput("Waiting For Build To Start\n");
 
         while (project.getState() != ContinuumProjectState.BUILDING) {
             // TODO: need an appropriate way to cancel a build that hasn't started if we get a cancelled signal
@@ -344,8 +350,8 @@ public class ContinuumWorker extends MaestroWorker {
                 if (result == null) {
                     throw new TimeoutException("Failed To Detect Build Start After " + (timeout / 1000) + " Seconds");
                 } else {
-                    if (result.getState() == ContinuumProjectState.FAILED ||
-                            result.getState() == ContinuumProjectState.ERROR) {
+                    int state = result.getState();
+                    if (state == ContinuumProjectState.FAILED || state == ContinuumProjectState.ERROR) {
                         throw new Exception(result.getError());
                     }
                 }
@@ -362,7 +368,7 @@ public class ContinuumWorker extends MaestroWorker {
     private Schedule getMaestroSchedule() throws Exception {
         List<Schedule> schedules = client.getSchedules();
         for (Schedule schedule : schedules) {
-            if (schedule.getName().equals("MAESTRO_SCHEDULE")) {
+            if (schedule.getName().equals(MAESTRO_SCHEDULE_NAME)) {
                 return schedule;
             }
         }
@@ -376,7 +382,7 @@ public class ContinuumWorker extends MaestroWorker {
         schedule.setCronExpression("0 0 * * * ?");
         schedule.setDelay(0);
         schedule.setDescription("Generated By Maestro");
-        schedule.setName("MAESTRO_SCHEDULE");
+        schedule.setName(MAESTRO_SCHEDULE_NAME);
 
         return client.addSchedule(schedule);
 
@@ -384,12 +390,10 @@ public class ContinuumWorker extends MaestroWorker {
 
     private void waitForBuild(Project project) throws Exception {
         project = client.getProjectWithAllDetails(project.getId());
-        String output = "";
+        String output;
         String runningTotal = "";
-        while (project.getState() != ContinuumProjectState.OK &&
-                project.getState() != ContinuumProjectState.FAILED &&
-                project.getState() != ContinuumProjectState.ERROR &&
-                project.getState() != ContinuumProjectState.NEW) {
+        while (project.getState() != ContinuumProjectState.OK && project.getState() != ContinuumProjectState.FAILED &&
+                project.getState() != ContinuumProjectState.ERROR && project.getState() != ContinuumProjectState.NEW) {
             if (isCancelled()) {
                 client.cancelCurrentBuild();
                 break;
@@ -418,8 +422,6 @@ public class ContinuumWorker extends MaestroWorker {
             project = client.getProjectWithAllDetails(project.getId());
         }
 
-        project = client.getProjectWithAllDetails(project.getId());
-
         String newOutput = client.getBuildOutput(project.getId(), project.getLatestBuildId());
 
         output = newOutput.replace(runningTotal, "");
@@ -427,92 +429,94 @@ public class ContinuumWorker extends MaestroWorker {
         writeOutput(output);
 
         BuildResult result = getBuildResult(project.getId());
+        if (result == null) {
+            throw new Exception("Unable to get build result for completed build for project: " + project.getId());
+        }
         if (result.getExitCode() != 0) {
             throw new Exception(result.getError());
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     public void build() {
         try {
             client = getClient();
-            Long projectId = null;
-            Project project = null;
-            if (getFields().get("__context_outputs__") != null &&
-                    (projectId = (Long) ((JSONObject) this.getFields().get("__context_outputs__")).get("continuum_project_id")) != null) {
+            Project project;
+            JSONObject context = getContext();
+            Long projectId = (Long) context.get(CONTINUUM_PROJECT_ID);
+            if (projectId != null) {
                 project = client.getProjectWithAllDetails(projectId.intValue());
             } else {
-                String projectGroupName = this.getField("group_name");
-                this.writeOutput("Searching For Project Group " + projectGroupName + "\n");
-                ProjectGroup projectGroup = this.getProjectGroup(projectGroupName);
-                this.writeOutput("Found Project Group " + projectGroup.getName() + "\n");
+                String projectGroupName = getGroupName();
+                writeOutput("Searching For Project Group " + projectGroupName + "\n");
+                ProjectGroup projectGroup = getProjectGroup(projectGroupName);
+                writeOutput("Found Project Group " + projectGroup.getName() + "\n");
 
-                String projectName = this.getField("project_name");
-                this.writeOutput("Searching For Project " + projectName + "\n");
-                project = this.getProjectFromProjectGroup(projectName, projectGroup);
+                String projectName = getProjectName();
+                writeOutput("Searching For Project " + projectName + "\n");
+                project = getProjectFromProjectGroup(projectName, projectGroup);
             }
-            this.writeOutput("Found Project " + project.getName() + "\n");
+            writeOutput("Found Project " + project.getName() + "\n");
 
-            String goals = this.getField("goals");
-            if (goals == null)
-                goals = "";
-            String arguments = this.getField("arguments");
-            if (arguments == null)
-                arguments = "";
-            String buildFile = this.getField("build_file");
-            if (buildFile == null)
-                buildFile = "";
+            String goals = getGoals();
+            String arguments = getArguments();
+            String buildFile = getBuildFile();
 
             Profile profile = null;
-            if (((Map) getFields().get("facts")).get("continuum_build_agent") != null) {
-                profile = setupBuildAgent(profile);
+            if (getFact(FACT_CONTINUUM_BUILD_AGENT) != null) {
+                profile = setupBuildAgent();
             }
-            JSONObject params = (JSONObject) this.getFields().get("params");
-            Long taskId = (Long) params.get("composition_task_id");
+            JSONObject params = getParams();
+            Long taskId = (Long) params.get(PARAMS_COMPOSITION_TASK_ID);
             if (taskId == null) {
-                this.setError("Task Is is missing");
+                setError("Task Is is missing");
             }
-            this.writeOutput("Searching For Build Definition for task ID " + taskId + "\n");
-            this.writeOutput("And Arguements " + arguments + "\n");
+            writeOutput("Searching For Build Definition for task ID " + taskId + "\n");
+            writeOutput("And arguments " + arguments + "\n");
 
 
             BuildDefinition buildDefinition = null;
-            if (this.getFields().get("__previous_context_outputs__") != null &&
-                    ((JSONObject) this.getFields().get("__previous_context_outputs__")).get("build_definition_id") != null) {
+            JSONObject previousContext = (JSONObject) getFields().get(PREVIOUS_CONTEXT_OUTPUTS);
+            Integer buildDefinitionId;
+            if (previousContext != null &&
+                    (buildDefinitionId = (Integer) previousContext.get(BUILD_DEFINITION_ID)) != null) {
                 try {
-                    buildDefinition = this.getBuildDefinitionFromId(Integer.parseInt(((JSONObject) this.getFields().get("__previous_context_outputs__")).get("build_definition_id").toString()), goals, arguments, buildFile, project, profile);
-                } catch (Exception w) {
-                    buildDefinition = this.getBuildDefinitionFromProject(goals, arguments, buildFile, project, profile, taskId);
+                    buildDefinition = getBuildDefinitionFromId(buildDefinitionId, goals, arguments, buildFile, project,
+                            profile);
+                } catch (Exception e) {
+                    logger.log(Level.FINE,
+                            "Build definition not found by ID, trying project: " + e.getLocalizedMessage(), e);
+                    buildDefinition = getBuildDefinitionFromProject(goals, arguments, buildFile, project, profile,
+                            taskId);
                 }
 
             }
             if (buildDefinition == null) {
-                buildDefinition = this.getBuildDefinitionFromProject(goals, arguments, buildFile, project, profile, taskId);
+                buildDefinition = getBuildDefinitionFromProject(goals, arguments, buildFile, project, profile, taskId);
             }
 
-            this.writeOutput("Retrieved Build Definition " + buildDefinition.getId() + "\n");
+            writeOutput("Retrieved Build Definition " + buildDefinition.getId() + "\n");
 
-            this.writeOutput("Triggering Build " + goals + "\n");
+            writeOutput("Triggering Build " + goals + "\n");
             project = triggerBuild(project, buildDefinition);
-            this.writeOutput("The Build Has Started\n");
+            writeOutput("The Build Has Started\n");
 
             waitForBuild(project);
 
-            JSONObject outputData = (JSONObject) getFields().get("__context_outputs__");
-            if (outputData == null)
-                outputData = new JSONObject();
-            outputData.put("build_definition_id", buildDefinition.getId());
-            outputData.put("build_id", project.getLatestBuildId());
+            if (context == null)
+                context = new JSONObject();
+            context.put(BUILD_DEFINITION_ID, buildDefinition.getId());
+            context.put(BUILD_ID, project.getLatestBuildId());
 
-            getFields().put("__context_outputs__", outputData);
+            setField(CONTEXT_OUTPUTS, context);
 
             BuildResult buildResult = getBuildResult(project.getId());
             if (buildResult != null) {
                 addLink("Continuum Build " + project.getBuildNumber(), buildResult.getBuildUrl());
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            this.setError("Continuum Build Failed: " + e.getMessage());
+            logger.log(Level.WARNING, e.getLocalizedMessage(), e);
+            setError("Continuum Build Failed: " + e.getMessage());
         }
     }
 
@@ -524,10 +528,10 @@ public class ContinuumWorker extends MaestroWorker {
     @SuppressWarnings("unchecked")
     public void addMavenProject() {
         try {
-            client = this.getClient();
+            client = getClient();
             ProjectGroup projectGroup = null;
-            String groupName = getField("group_name");
-            if (groupName != null && !groupName.equals("")) {
+            String groupName = getGroupName();
+            if (StringUtils.isNotEmpty(groupName)) {
                 try {
                     writeOutput("Requesting Group " + groupName + " From Continuum\n");
                     projectGroup = getProjectGroup(groupName);
@@ -541,85 +545,81 @@ public class ContinuumWorker extends MaestroWorker {
             writeOutput("Processing Project In Continuum\n");
             ProjectSummary projectSummary = createMavenProject(projectGroup);
 
-            JSONObject outputData = (JSONObject) this.getFields().get("__context_outputs__");
-            if (outputData == null)
-                outputData = new JSONObject();
-            outputData.put("continuum_project_id", projectSummary.getId());
-            this.setField("continuum_project_id", projectSummary.getId());
-            this.setField("__context_outputs__", outputData);
-
+            JSONObject outputData = getContext();
+            outputData.put(CONTINUUM_PROJECT_ID, projectSummary.getId());
+            setField(CONTINUUM_PROJECT_ID, projectSummary.getId());
+            setField(CONTEXT_OUTPUTS, outputData);
 
             writeOutput("Successfully Processed Maven Project Project\n");
         } catch (Exception e) {
-            e.printStackTrace();
-            this.setError("Continuum Build Failed: " + e.getMessage());
+            logger.log(Level.FINE, e.getLocalizedMessage(), e);
+            setError("Continuum Build Failed: " + e.getMessage());
         }
     }
 
     @SuppressWarnings("unchecked")
     public void addShellProject() {
         try {
-            client = this.getClient();
-            ProjectGroup projectGroup = null;
+            client = getClient();
+            ProjectGroup projectGroup;
+            String groupName = getGroupName();
             try {
-                writeOutput("Requesting Group " + getField("group_name") + " From Continuum\n");
-                projectGroup = getProjectGroup(getField("group_name"));
-                writeOutput("Found Group " + getField("group_name") + " In Continuum\n");
+                writeOutput("Requesting Group " + groupName + " From Continuum\n");
+                projectGroup = getProjectGroup(groupName);
+                writeOutput("Found Group " + groupName + " In Continuum\n");
             } catch (Exception e) {
-                writeOutput("Creating " + getField("group_name") + " In Continuum\n");
+                writeOutput("Creating " + groupName + " In Continuum\n");
                 projectGroup = createProjectGroup();
-                writeOutput("Created " + getField("group_name") + " In Continuum\n");
+                writeOutput("Created " + groupName + " In Continuum\n");
             }
             ProjectSummary projectSummary;
+            String projectName = getProjectName();
             try {
-                writeOutput("Requesting Project " + getField("project_name") + " In Continuum\n");
-                projectSummary = getProjectFromProjectGroup(getField("project_name"), projectGroup);
-                writeOutput("Found Project " + getField("project_name") + " In Continuum\n");
+                writeOutput("Requesting Project " + projectName + " In Continuum\n");
+                projectSummary = getProjectFromProjectGroup(projectName, projectGroup);
+                writeOutput("Found Project " + projectName + " In Continuum\n");
             } catch (Exception e) {
-                writeOutput("Creating " + getField("project_name") + " In Continuum\n");
+                writeOutput("Creating " + projectName + " In Continuum\n");
                 projectSummary = createShellProject(projectGroup.getId());
-                writeOutput("Created " + getField("project_name") + " In Continuum\n");
+                writeOutput("Created " + projectName + " In Continuum\n");
             }
 
-            writeOutput("Successfully Processed Shell Project " + getField("project_name") + "\n");
-            JSONObject outputData = (JSONObject) this.getFields().get("__context_outputs__");
-            if (outputData == null)
-                outputData = new JSONObject();
-            outputData.put("continuum_project_id", projectSummary.getId());
-            this.setField("continuum_project_id", projectSummary.getId());
-            this.setField("__context_outputs__", outputData);
+            writeOutput("Successfully Processed Shell Project " + projectName + "\n");
+            JSONObject outputData = getContext();
+            outputData.put(CONTINUUM_PROJECT_ID, projectSummary.getId());
+            setField(CONTINUUM_PROJECT_ID, projectSummary.getId());
+            setField(CONTEXT_OUTPUTS, outputData);
 
         } catch (Exception e) {
-            this.setError("Continuum Build Failed: " + e.getMessage());
+            setError("Continuum Build Failed: " + e.getMessage());
         }
     }
 
     private ProjectGroup createProjectGroup() throws Exception {
         ProjectGroupSummary projectGroup = new ProjectGroupSummary();
-        projectGroup.setDescription(getField("group_description"));
-        projectGroup.setGroupId(getField("group_id"));
-        projectGroup.setName(getField("group_name"));
+        projectGroup.setDescription(getGroupDescription());
+        projectGroup.setGroupId(getGroupId());
+        projectGroup.setName(getGroupName());
         client.addProjectGroup(projectGroup);
 
-        return getProjectGroup(getField("group_name"));
+        return getProjectGroup(getGroupName());
     }
 
     private ProjectSummary createShellProject(int projectGroupId) throws Exception {
         ProjectSummary project = new ProjectSummary();
-        project.setName(getField("project_name"));
-        project.setDescription(getField("project_description"));
-        project.setVersion(getField("project_version"));
-        project.setScmUrl(getField("scm_url"));
-        project.setScmUsername(getField("scm_username"));
-        project.setScmPassword(getField("scm_password"));
-        project.setScmUseCache(Boolean.parseBoolean(getField("scm_use_cache")));
-        project.setScmTag(getField("scm_branch"));
-
+        project.setName(getProjectName());
+        project.setDescription(getProjectDescription());
+        project.setVersion(getProjectVersion());
+        project.setScmUrl(getScmUrl());
+        project.setScmUsername(getScmUsername());
+        project.setScmPassword(getScmPassword());
+        project.setScmUseCache(isScmUseCache());
+        project.setScmTag(getScmBranch());
 
         project = client.addShellProject(project, projectGroupId);
 
         if (project == null) {
-            throw new Exception("Unable To Create Project In " + getField("group_name"));
+            throw new Exception("Unable To Create Project In " + getGroupName());
         }
         return project;
     }
@@ -628,10 +628,11 @@ public class ContinuumWorker extends MaestroWorker {
         int projectGroupId = projectGroup != null ? projectGroup.getId() : NO_PROJECT_GROUP;
 
         AddingResult result;
-        if (Boolean.parseBoolean(getField("single_directory"))) {
-            result = client.addMavenTwoProjectAsSingleProject(getField("pom_url"), projectGroupId);
+        String pomUrl = getPomUrl();
+        if (isSingleDirectory()) {
+            result = client.addMavenTwoProjectAsSingleProject(pomUrl, projectGroupId);
         } else {
-            result = client.addMavenTwoProject(getField("pom_url"), projectGroupId);
+            result = client.addMavenTwoProject(pomUrl, projectGroupId);
         }
         ProjectSummary project = null;
         if (result.getProjects() != null && !result.getProjects().isEmpty()) {
@@ -640,16 +641,14 @@ public class ContinuumWorker extends MaestroWorker {
         if (result.hasErrors()) {
             if (result.getErrorsAsString().contains(DUPLICATE_PROJECT_ERR)) {
                 if (project != null) {
-                    ProjectGroup group = projectGroup != null ? projectGroup : getProjectGroup(project.getProjectGroup().getName());
+                    ProjectGroup group = projectGroup;
+                    if (group == null) {
+                        group = getProjectGroup(project.getProjectGroup().getName());
+                    }
                     project = getProjectSummary(project.getName(), group);
                     writeOutput("Found Existing Project (" + project.getId() + ")\n");
                 } else {
-                    if (projectGroup != null) {
-                        project = getProjectSummary(project.getName(), projectGroup);
-                        writeOutput("Found Existing Project (" + project.getId() + ")\n");
-                    } else {
-                        throw new Exception(result.getErrorsAsString() + "; unable to determine conflicting project");
-                    }
+                    throw new Exception(result.getErrorsAsString() + "; unable to determine conflicting project");
                 }
             } else {
                 writeOutput("Found projects, but had errors:\n" + result.getErrorsAsString());
@@ -659,16 +658,137 @@ public class ContinuumWorker extends MaestroWorker {
             }
         } else {
             if (project == null) {
-                throw new Exception("Unable To Create Project In " + getField("group_name"));
+                throw new Exception("Unable To Create Project In " + getGroupName());
             }
             writeOutput("Project Created (" + project.getId() + ")\n");
         }
         return project;
     }
 
-    @Override
-    public void writeOutput(String output) {
-        super.writeOutput(output);    //To change body of overridden methods use File | Settings | File Templates.
-        System.out.print(output);
+    JSONObject getContext() {
+        JSONObject outputData = (JSONObject) getFields().get(CONTEXT_OUTPUTS);
+        if (outputData == null) {
+            outputData = new JSONObject();
+        }
+        return outputData;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> getFacts() {
+        return (Map<String, String>) getFields().get("facts");
+    }
+
+    private String getFact(String name) {
+        return getFacts().get(name);
+    }
+
+    private String getAgentName(Map<String, String> facts) {
+        return facts.get(FACT_OPERATINGSYSTEM) + "-" + facts.get(FACT_IPADDRESS);
+    }
+
+    private URL getUrl() throws MalformedURLException {
+        String scheme = isUseSsl() ? "https" : "http";
+        String path = getWebPath() + "/" + "xmlrpc";
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return new URL(scheme, getHost(), getPort(), path);
+    }
+
+    private String getHost() {
+        return getField("host");
+    }
+
+    private int getPort() {
+        return (Integer) getFields().get("port");
+    }
+
+    private String getWebPath() {
+        return getField("web_path");
+    }
+
+    private boolean isUseSsl() {
+        return Boolean.parseBoolean(getField("use_ssl"));
+    }
+
+    private String getUsername() {
+        return getField("username");
+    }
+
+    private String getPassword() {
+        return getField("password");
+    }
+
+    private JSONObject getParams() {
+        return (JSONObject) getFields().get("params");
+    }
+
+    private String getGoals() {
+        return getNonNullField("goals");
+    }
+
+    private String getArguments() {
+        return getNonNullField("arguments");
+    }
+
+    private String getBuildFile() {
+        return getNonNullField("build_file");
+    }
+
+    private String getNonNullField(String field) {
+        String value = getField(field);
+        return value != null ? value : "";
+    }
+
+    private String getGroupName() {
+        return getField("group_name");
+    }
+
+    private String getGroupDescription() {
+        return getField("group_description");
+    }
+
+    private String getGroupId() {
+        return getField("group_id");
+    }
+
+    private String getProjectName() {
+        return getField("project_name");
+    }
+
+    private String getProjectDescription() {
+        return getField("project_description");
+    }
+
+    private String getProjectVersion() {
+        return getField("project_version");
+    }
+
+    private String getScmUrl() {
+        return getField("scm_url");
+    }
+
+    private String getScmUsername() {
+        return getField("scm_username");
+    }
+
+    private String getScmPassword() {
+        return getField("scm_password");
+    }
+
+    private boolean isScmUseCache() {
+        return Boolean.parseBoolean(getField("scm_use_cache"));
+    }
+
+    private String getScmBranch() {
+        return getField("scm_branch");
+    }
+
+    private String getPomUrl() {
+        return getField("pom_url");
+    }
+
+    private boolean isSingleDirectory() {
+        return Boolean.parseBoolean(getField("single_directory"));
     }
 }
