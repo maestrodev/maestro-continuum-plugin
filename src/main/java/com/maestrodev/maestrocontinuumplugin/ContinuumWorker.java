@@ -87,6 +87,7 @@ public class ContinuumWorker extends MaestroWorker {
         List<BuildAgentConfiguration> buildAgents = client.getAllBuildAgents();
 
         for (BuildAgentConfiguration buildAgent : buildAgents) {
+            writeOutput(buildAgent.getUrl() + " vs " + url); // TODO
             if (buildAgent.getUrl().equals(url)) {
                 writeOutput("Making Sure Agent Is Enabled\n");
                 buildAgent.setEnabled(true);
@@ -98,6 +99,7 @@ public class ContinuumWorker extends MaestroWorker {
             }
         }
 
+        writeOutput("Adding new Continuum build agent at " + url);
         BuildAgentConfiguration buildAgentConfiguration = new BuildAgentConfiguration();
 
         buildAgentConfiguration.setDescription("Maestro Configured Build Agent (" + url + ")");
@@ -107,7 +109,7 @@ public class ContinuumWorker extends MaestroWorker {
         buildAgentConfiguration = client.addBuildAgent(buildAgentConfiguration);
 
         if (!buildAgentConfiguration.isEnabled()) {
-            throw new Exception("Unable To Find Build Agent At " + url);
+            throw new Exception("Unable To Enable Build Agent At " + url);
         }
 
         return buildAgentConfiguration;
@@ -308,7 +310,9 @@ public class ContinuumWorker extends MaestroWorker {
                 }
             }
         } catch (Exception e) {
-            throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment" + e.getMessage());
+            logger.log(Level.WARNING, e.getLocalizedMessage(), e);
+            throw new Exception("Error Locating Continuum Build Agent Or Creating Build Environment: " + e.getMessage(),
+                    e);
         }
         return profile;
     }
