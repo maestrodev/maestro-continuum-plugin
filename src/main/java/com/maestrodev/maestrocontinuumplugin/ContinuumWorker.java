@@ -456,7 +456,7 @@ public class ContinuumWorker extends MaestroWorker {
                 writeOutput("Searching For Project " + projectName + "\n");
                 project = getProjectFromProjectGroup(projectName, projectGroup);
             }
-            writeOutput("Found Project " + project.getName() + "\n");
+            writeOutput("Found Project " + project.getName() + " (" + project.getId() + ")\n");
 
             String goals = getGoals();
             String arguments = getArguments();
@@ -477,12 +477,12 @@ public class ContinuumWorker extends MaestroWorker {
 
             BuildDefinition buildDefinition = null;
             JSONObject previousContext = (JSONObject) getFields().get(PREVIOUS_CONTEXT_OUTPUTS);
-            Integer buildDefinitionId;
+            Long buildDefinitionId;
             if (previousContext != null &&
-                    (buildDefinitionId = (Integer) previousContext.get(BUILD_DEFINITION_ID)) != null) {
+                    (buildDefinitionId = (Long) previousContext.get(BUILD_DEFINITION_ID)) != null) {
                 try {
-                    buildDefinition = getBuildDefinitionFromId(buildDefinitionId, goals, arguments, buildFile, project,
-                            profile);
+                    buildDefinition = getBuildDefinitionFromId(buildDefinitionId.intValue(), goals, arguments,
+                            buildFile, project, profile);
                 } catch (Exception e) {
                     logger.log(Level.FINE,
                             "Build definition not found by ID, trying project: " + e.getLocalizedMessage(), e);
@@ -700,7 +700,7 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private int getPort() {
-        return (Integer) getFields().get("port");
+        return Integer.parseInt(getFields().get("port").toString());
     }
 
     private String getWebPath() {
