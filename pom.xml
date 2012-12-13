@@ -28,7 +28,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j.version>1.5.8</slf4j.version>
-    <continuum.version>1.4.1-maestro-3.4.2.3</continuum.version>
+    <continuum.version>1.4.1-maestrodev-5</continuum.version>
   </properties>
 
   <scm>
