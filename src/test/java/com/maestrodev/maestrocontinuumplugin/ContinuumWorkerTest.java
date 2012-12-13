@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -264,15 +265,12 @@ public class ContinuumWorkerTest {
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
-    private void setupBuildProjectMocks(int projectId, int buildDefId)
+    private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroup group)
             throws Exception {
         List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
-        ProjectGroup group = new ProjectGroup();
-        group.setName("HelloWorld");
-        group.setGroupId("com.maestrodev");
 
         ProjectSummary projectSummary = new ProjectSummary();
-        projectSummary.setName("HelloWorld");
+        projectSummary.setName(projectName);
         projectSummary.setId(projectId);
         List<ProjectSummary> projects = new ArrayList<ProjectSummary>();
         projects.add(projectSummary);
@@ -290,7 +288,7 @@ public class ContinuumWorkerTest {
 
         Project project = new Project();
         project.setId(projectId);
-        project.setName("HelloWorld");
+        project.setName(projectName);
         project.setBuildDefinitions(buildDefinitions);
 
         Project buildingProject = new Project();
@@ -311,6 +309,13 @@ public class ContinuumWorkerTest {
         when(continuumXmlRpcClient.getLatestBuildResult(projectId)).thenReturn(buildResult);
     }
 
+    private ProjectGroup createProjectGroup() {
+        ProjectGroup group = new ProjectGroup();
+        group.setName("HelloWorld");
+        group.setGroupId("com.maestrodev");
+        return group;
+    }
+
     /**
      * Rigourous Test :-)
      */
@@ -320,7 +325,7 @@ public class ContinuumWorkerTest {
         int projectId = 1;
         int buildDefId = 1;
 
-        setupBuildProjectMocks(projectId, buildDefId);
+        setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup());
 
         JSONObject fields = createContinuumFields();
         fields.put("group_name", "HelloWorld");
@@ -333,7 +338,7 @@ public class ContinuumWorkerTest {
         fields.put("composition", "Test Composition");
 
         JSONObject params = new JSONObject();
-        params.put("composition_task_id", 1L);
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
         fields.put("params", params);
 
         createWorkItem(fields);
@@ -342,6 +347,81 @@ public class ContinuumWorkerTest {
         method.invoke(continuumWorker);
 
         assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testBuildDuplicateMavenProjectDifferentGroups() throws Exception {
+        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
+        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
+        String name = "HelloWorld";
+
+        String groupId = "testBuildDuplicateMavenProjectDifferentGroups";
+        ProjectSummary project = createProject(groupId, name, 1);
+        ProjectGroup group = createProjectGroup(groupId, project, 1);
+        projectGroups.add(group);
+
+        String groupId2 = "testBuildDuplicateMavenProjectDifferentGroups2";
+        ProjectSummary project2 = createProject(groupId2, name, 2);
+        ProjectGroup group2 = createProjectGroup(groupId2, project2, 2);
+        projectGroups.add(group2);
+
+        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
+        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
+        when(continuumXmlRpcClient.getProjectGroup(2)).thenReturn(group2);
+
+        mockProjectAddition(projectPom, project, 1);
+        mockProjectAddition(projectPom, project2, 2);
+
+        int buildDefId = 1;
+        setupBuildProjectMocks(project.getId(), buildDefId, project.getName(), group);
+
+        JSONObject fields = createContinuumFields();
+        fields.put("group_name", group.getName());
+        fields.put("group_id", group.getGroupId());
+        fields.put("project_name", project.getName());
+        fields.put("project_group", group.getGroupId());
+        fields.put("goals", "clean test install package");
+        fields.put("arguments", "--batch-mode");
+        fields.put("facts", new JSONObject());
+        fields.put("composition", "Test Composition");
+
+        JSONObject params = new JSONObject();
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
+        fields.put("params", params);
+
+        createWorkItem(fields);
+
+        Method method = continuumWorker.getClass().getMethod("build");
+        method.invoke(continuumWorker);
+
+        assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
+
+        int buildDefId2 = 2;
+        setupBuildProjectMocks(project2.getId(), buildDefId2, project2.getName(), group2);
+
+        fields = createContinuumFields();
+        fields.put("group_name", group2.getName());
+        fields.put("group_id", group2.getGroupId());
+        fields.put("project_name", project2.getName());
+        fields.put("project_group", group2.getGroupId());
+        fields.put("goals", "clean test install package");
+        fields.put("arguments", "--batch-mode");
+        fields.put("facts", new JSONObject());
+        fields.put("composition", "Test Composition");
+
+        params = new JSONObject();
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
+        fields.put("params", params);
+
+        createWorkItem(fields);
+
+        method = continuumWorker.getClass().getMethod("build");
+        method.invoke(continuumWorker);
+
+        assertThat(getBuildDefinitionId(), is(buildDefId2));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
@@ -354,7 +434,7 @@ public class ContinuumWorkerTest {
         int projectId = 8;
         int buildDefId = 1;
 
-        setupBuildProjectMocks(projectId, buildDefId);
+        setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup());
 
         JSONObject fields = createContinuumFields();
         fields.put("goals", "clean test install package");
@@ -386,7 +466,7 @@ public class ContinuumWorkerTest {
         int projectId = 1;
         int buildDefId = 1;
 
-        setupBuildProjectMocks(projectId, buildDefId);
+        setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup());
 
         JSONObject fields = createContinuumFields();
         fields.put("group_name", "HelloWorld");
@@ -422,7 +502,7 @@ public class ContinuumWorkerTest {
         int projectId = 1;
         int buildDefId = 1;
 
-        setupBuildProjectMocks(projectId, buildDefId);
+        setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup());
 
         JSONObject fields = createContinuumFields();
         fields.put("group_name", "HelloWorld");
