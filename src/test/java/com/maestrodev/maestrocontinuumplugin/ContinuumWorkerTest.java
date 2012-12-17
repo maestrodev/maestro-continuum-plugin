@@ -479,7 +479,7 @@ public class ContinuumWorkerTest {
         fields.put("facts", new JSONObject());
 
         JSONObject previousContextOutputs = new JSONObject();
-        previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, buildDefId);
+        previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, (long) buildDefId);
 
         fields.put(ContinuumWorker.PREVIOUS_CONTEXT_OUTPUTS, previousContextOutputs);
 
@@ -515,7 +515,7 @@ public class ContinuumWorkerTest {
         fields.put("facts", new JSONObject());
 
         JSONObject previousContextOutputs = new JSONObject();
-        previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, buildDefId);
+        previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, (long) buildDefId);
         fields.put(ContinuumWorker.PREVIOUS_CONTEXT_OUTPUTS, previousContextOutputs);
 
         JSONObject params = new JSONObject();
@@ -624,13 +624,13 @@ public class ContinuumWorkerTest {
         result.addError(ContinuumWorker.DUPLICATE_PROJECT_ERR);
     }
 
-    private Integer getBuildDefinitionId() {
+    private int getBuildDefinitionId() {
         JSONObject output = continuumWorker.getContext();
-        return (Integer) output.get(ContinuumWorker.BUILD_DEFINITION_ID);
+        return Integer.valueOf(output.get(ContinuumWorker.BUILD_DEFINITION_ID).toString());
     }
 
-    private Integer getContinuumProjectId() {
+    private int getContinuumProjectId() {
         JSONObject output = continuumWorker.getContext();
-        return (Integer) output.get(ContinuumWorker.CONTINUUM_PROJECT_ID);
+        return Integer.valueOf(output.get(ContinuumWorker.CONTINUUM_PROJECT_ID).toString());
     }
 }
