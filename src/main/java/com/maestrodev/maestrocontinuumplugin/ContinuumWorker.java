@@ -528,11 +528,20 @@ public class ContinuumWorker extends MaestroWorker {
                 writeOutput(client.getBuildOutput(project.getId(), project.getLatestBuildId()));
             }
 
-            addLink("Continuum Build " + result.getBuildNumber(), result.getBuildUrl());
+            addLinkToBuildResult(result);
         } catch (Exception e) {
             logger.log(Level.WARNING, e.getLocalizedMessage(), e);
             setError("Continuum Build Failed: " + e.getMessage());
         }
+    }
+
+    private void addLinkToBuildResult(BuildResult result) throws Exception {
+        // Not populated in Continuum 1.4.1 if it is read from a file, see CONTINUUM-2700, construct one instead
+//        String baseUrl = client.getSystemConfiguration().getBaseUrl();
+        String baseUrl = getBaseUrl().toExternalForm();
+        ProjectSummary project = result.getProject();
+        String url = baseUrl + "/buildResult.action?projectId=" + project.getId() + "&buildId=" + result.getId();
+        addLink("Continuum Build #" + result.getBuildNumber(), url);
     }
 
     private boolean isCancelled() {
@@ -703,12 +712,23 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private URL getUrl() throws MalformedURLException {
+        return getUrl("/xmlrpc");
+    }
+
+    private URL getBaseUrl() throws MalformedURLException {
+        return getUrl("");
+    }
+
+    private URL getUrl(String path) throws MalformedURLException {
         String scheme = isUseSsl() ? "https" : "http";
-        String path = getWebPath() + "/" + "xmlrpc";
-        if (!path.startsWith("/")) {
-            path = "/" + path;
+        String webPath = getWebPath();
+        if (!webPath.startsWith("/")) {
+            webPath = "/" + webPath;
         }
-        return new URL(scheme, getHost(), getPort(), path);
+        if (webPath.endsWith("/")) {
+            webPath = webPath.substring(0, webPath.length() - 1);
+        }
+        return new URL(scheme, getHost(), getPort(), webPath + path);
     }
 
     private String getHost() {

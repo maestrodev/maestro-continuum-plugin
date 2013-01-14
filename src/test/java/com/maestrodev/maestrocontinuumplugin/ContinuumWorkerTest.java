@@ -289,6 +289,7 @@ public class ContinuumWorkerTest {
         BuildResult buildResult = new BuildResult();
         buildResult.setExitCode(0);
         buildResult.setId(buildResultId);
+        buildResult.setProject(project);
         when(continuumXmlRpcClient.getBuildOutput(Matchers.any(int.class), Matchers.any(int.class))).thenReturn("");
         when(continuumXmlRpcClient.getLatestBuildResult(projectId)).thenReturn(buildResult);
     }
