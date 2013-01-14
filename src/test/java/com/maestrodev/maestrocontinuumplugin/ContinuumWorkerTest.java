@@ -22,8 +22,6 @@ import org.apache.maven.continuum.xmlrpc.project.AddingResult;
 import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
 import org.apache.maven.continuum.xmlrpc.project.BuildResult;
 import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
-import org.apache.maven.continuum.xmlrpc.project.Project;
-import org.apache.maven.continuum.xmlrpc.project.ProjectGroup;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroupSummary;
 import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
 import org.fusesource.stomp.client.BlockingConnection;
@@ -33,15 +31,15 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -87,14 +85,13 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateMavenProject() throws Exception {
-        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
-        ProjectGroup group = new ProjectGroup();
+        ProjectGroupSummary group = new ProjectGroupSummary();
         group.setId(1);
         group.setName("HelloWorld");
         group.setGroupId("com.maestrodev");
-        projectGroups.add(group);
 
-        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
+        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Collections.singletonList(group));
+        when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.<ProjectSummary>emptyList());
 
         String projectPom = "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml";
         mockProjectAddition(projectPom, createProject(group.getGroupId(), "projectName", 1), 1);
@@ -116,23 +113,20 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateDuplicateMavenProjectDifferentGroups() throws Exception {
-        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
         String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         String name = "HelloWorld";
 
         String groupId = "testCreateDuplicateMavenProjectDifferentGroups";
         ProjectSummary project = createProject(groupId, name, 1);
-        ProjectGroup group = createProjectGroup(groupId, project, 1);
-        projectGroups.add(group);
+        ProjectGroupSummary group = createProjectGroup(groupId, project, 1);
 
         String groupId2 = "testCreateDuplicateMavenProjectDifferentGroups2";
         ProjectSummary project2 = createProject(groupId2, name, 2);
-        ProjectGroup group2 = createProjectGroup(groupId2, project2, 2);
-        projectGroups.add(group2);
+        ProjectGroupSummary group2 = createProjectGroup(groupId2, project2, 2);
 
-        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
-        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
-        when(continuumXmlRpcClient.getProjectGroup(2)).thenReturn(group2);
+        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Arrays.asList(group, group2));
+        when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(project));
+        when(continuumXmlRpcClient.getProjects(group2.getId())).thenReturn(Collections.singletonList(project2));
 
         mockProjectAddition(projectPom, project, 1);
         mockProjectAddition(projectPom, project2, 2);
@@ -163,23 +157,20 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateDuplicateExistingMavenProjectDifferentGroups() throws Exception {
-        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
         String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         String name = "HelloWorld";
 
         String groupId = "testCreateDuplicateExistingMavenProjectDifferentGroups";
         ProjectSummary project = createProject(groupId, name, 1);
-        ProjectGroup group = createProjectGroup(groupId, project, 1);
-        projectGroups.add(group);
+        ProjectGroupSummary group = createProjectGroup(groupId, project, 1);
 
         String groupId2 = "testCreateDuplicateExistingMavenProjectDifferentGroups2";
         ProjectSummary project2 = createProject(groupId2, name, 2);
-        ProjectGroup group2 = createProjectGroup(groupId2, project2, 2);
-        projectGroups.add(group2);
+        ProjectGroupSummary group2 = createProjectGroup(groupId2, project2, 2);
 
-        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
-        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
-        when(continuumXmlRpcClient.getProjectGroup(2)).thenReturn(group2);
+        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Arrays.asList(group, group2));
+        when(continuumXmlRpcClient.getProjects(1)).thenReturn(Collections.singletonList(project));
+        when(continuumXmlRpcClient.getProjects(2)).thenReturn(Collections.singletonList(project2));
 
         mockProjectDuplicate(projectPom, project);
 
@@ -214,19 +205,16 @@ public class ContinuumWorkerTest {
         String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         ProjectSummary project = createProject("com.maestrodev", "HelloWorld", 1);
 
-        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
-        ProjectGroup group = new ProjectGroup();
+        ProjectGroupSummary group = new ProjectGroupSummary();
         group.setId(1);
         group.setName("HelloGroupWorld");
         group.setGroupId(project.getGroupId());
-        group.addProject(project);
-        projectGroups.add(group);
         project.setProjectGroup(group);
 
-        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
+        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Collections.singletonList(group));
+        when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(project));
 
         mockProjectDuplicate(projectPom, project, group, ContinuumWorker.NO_PROJECT_GROUP);
-        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
 
         JSONObject fields = createContinuumFields();
         fields.put("pom_url", projectPom);
@@ -258,20 +246,14 @@ public class ContinuumWorkerTest {
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
 
-    private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroup group)
+    private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroupSummary group)
             throws Exception {
-        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
-
         ProjectSummary projectSummary = new ProjectSummary();
         projectSummary.setName(projectName);
         projectSummary.setId(projectId);
-        List<ProjectSummary> projects = new ArrayList<ProjectSummary>();
-        projects.add(projectSummary);
-        group.setProjects(projects);
 
-        projectGroups.add(group);
-
-        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
+        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Collections.singletonList(group));
+        when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(projectSummary));
 
         List<BuildDefinition> buildDefinitions = new ArrayList<BuildDefinition>();
         BuildDefinition buildDef = new BuildDefinition();
@@ -279,22 +261,20 @@ public class ContinuumWorkerTest {
         buildDef.setDescription("Build Definition Generated By Maestro 4, task ID: 1");
         buildDefinitions.add(buildDef);
 
-        Project project = new Project();
+        ProjectSummary project = new ProjectSummary();
         project.setId(projectId);
         project.setName(projectName);
-        project.setBuildDefinitions(buildDefinitions);
 
-        Project buildingProject = new Project();
+        ProjectSummary buildingProject = new ProjectSummary();
         buildingProject.setId(projectId);
         buildingProject.setState(ContinuumProjectState.BUILDING);
-        buildingProject.setBuildDefinitions(buildDefinitions);
 
-        Project completedProject = new Project();
+        ProjectSummary completedProject = new ProjectSummary();
         completedProject.setId(projectId);
         completedProject.setState(ContinuumProjectState.OK);
-        buildingProject.setBuildDefinitions(buildDefinitions);
 
-        when(continuumXmlRpcClient.getProjectWithAllDetails(projectId)).thenReturn(project, buildingProject, completedProject);
+        when(continuumXmlRpcClient.getProjectSummary(projectId)).thenReturn(project, buildingProject, completedProject);
+        when(continuumXmlRpcClient.getBuildDefinitionsForProject(projectId)).thenReturn(buildDefinitions);
 
         BuildResult buildResult = new BuildResult();
         buildResult.setExitCode(0);
@@ -302,8 +282,8 @@ public class ContinuumWorkerTest {
         when(continuumXmlRpcClient.getLatestBuildResult(projectId)).thenReturn(buildResult);
     }
 
-    private ProjectGroup createProjectGroup() {
-        ProjectGroup group = new ProjectGroup();
+    private ProjectGroupSummary createProjectGroup() {
+        ProjectGroupSummary group = new ProjectGroupSummary();
         group.setName("HelloWorld");
         group.setGroupId("com.maestrodev");
         return group;
@@ -345,23 +325,20 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testBuildDuplicateMavenProjectDifferentGroups() throws Exception {
-        List<ProjectGroup> projectGroups = new ArrayList<ProjectGroup>();
         String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         String name = "HelloWorld";
 
         String groupId = "testBuildDuplicateMavenProjectDifferentGroups";
         ProjectSummary project = createProject(groupId, name, 1);
-        ProjectGroup group = createProjectGroup(groupId, project, 1);
-        projectGroups.add(group);
+        ProjectGroupSummary group = createProjectGroup(groupId, project, 1);
 
         String groupId2 = "testBuildDuplicateMavenProjectDifferentGroups2";
         ProjectSummary project2 = createProject(groupId2, name, 2);
-        ProjectGroup group2 = createProjectGroup(groupId2, project2, 2);
-        projectGroups.add(group2);
+        ProjectGroupSummary group2 = createProjectGroup(groupId2, project2, 2);
 
-        when(continuumXmlRpcClient.getAllProjectGroupsWithAllDetails()).thenReturn(projectGroups);
-        when(continuumXmlRpcClient.getProjectGroup(1)).thenReturn(group);
-        when(continuumXmlRpcClient.getProjectGroup(2)).thenReturn(group2);
+        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Arrays.asList(group, group2));
+        when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(project));
+        when(continuumXmlRpcClient.getProjects(group2.getId())).thenReturn(Collections.singletonList(project2));
 
         mockProjectAddition(projectPom, project, 1);
         mockProjectAddition(projectPom, project2, 2);
@@ -543,12 +520,11 @@ public class ContinuumWorkerTest {
         assertNull(continuumWorker.getError());
     }
 
-    private static ProjectGroup createProjectGroup(String groupId, ProjectSummary project, int id) {
-        ProjectGroup group = new ProjectGroup();
+    private static ProjectGroupSummary createProjectGroup(String groupId, ProjectSummary project, int id) {
+        ProjectGroupSummary group = new ProjectGroupSummary();
         group.setId(id);
         group.setName(groupId);
         group.setGroupId(groupId);
-        group.addProject(project);
         project.setProjectGroup(group);
         return group;
     }
