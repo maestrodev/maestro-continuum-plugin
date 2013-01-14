@@ -107,8 +107,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("addMavenProject");
-        method.invoke(continuumWorker);
+        continuumWorker.addMavenProject();
 
         assertNotNull(getContinuumProjectId());
         assertNull(continuumWorker.getError());
@@ -145,8 +144,7 @@ public class ContinuumWorkerTest {
         fields.put("group_description", "Description");
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("addMavenProject");
-        method.invoke(continuumWorker);
+        continuumWorker.addMavenProject();
         assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
         assertThat(continuumWorker.getError(), is(nullValue()));
 
@@ -157,8 +155,7 @@ public class ContinuumWorkerTest {
         fields.put("group_description", "Description");
         createWorkItem(fields);
 
-        method = continuumWorker.getClass().getMethod("addMavenProject");
-        method.invoke(continuumWorker);
+        continuumWorker.addMavenProject();
         assertThat(getContinuumProjectId(), is(equalTo(project2.getId())));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -193,8 +190,7 @@ public class ContinuumWorkerTest {
         fields.put("group_description", "Description");
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("addMavenProject");
-        method.invoke(continuumWorker);
+        continuumWorker.addMavenProject();
         assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
         assertThat(continuumWorker.getError(), is(nullValue()));
 
@@ -207,8 +203,7 @@ public class ContinuumWorkerTest {
         fields.put("group_description", "Description");
         createWorkItem(fields);
 
-        method = continuumWorker.getClass().getMethod("addMavenProject");
-        method.invoke(continuumWorker);
+        continuumWorker.addMavenProject();
         assertThat(getContinuumProjectId(), is(equalTo(project2.getId())));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -238,8 +233,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("addMavenProject");
-        method.invoke(continuumWorker);
+        continuumWorker.addMavenProject();
         assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -259,8 +253,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("addMavenProject");
-        method.invoke(continuumWorker);
+        continuumWorker.addMavenProject();
         assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -343,8 +336,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("build");
-        method.invoke(continuumWorker);
+        continuumWorker.build();
 
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
@@ -393,8 +385,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("build");
-        method.invoke(continuumWorker);
+        continuumWorker.build();
 
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
@@ -418,8 +409,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        method = continuumWorker.getClass().getMethod("build");
-        method.invoke(continuumWorker);
+        continuumWorker.build();
 
         assertThat(getBuildDefinitionId(), is(buildDefId2));
         assertThat(continuumWorker.getError(), is(nullValue()));
@@ -452,8 +442,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("build");
-        method.invoke(continuumWorker);
+        continuumWorker.build();
 
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
@@ -489,8 +478,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("build");
-        method.invoke(continuumWorker);
+        continuumWorker.build();
 
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
@@ -524,8 +512,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        Method method = continuumWorker.getClass().getMethod("build");
-        method.invoke(continuumWorker);
+        continuumWorker.build();
 
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
@@ -551,8 +538,7 @@ public class ContinuumWorkerTest {
 
         createWorkItem(continuumWorker, fields);
 
-        Method method = continuumWorker.getClass().getMethod("build");
-        method.invoke(continuumWorker);
+        continuumWorker.build();
 
         assertNull(continuumWorker.getError());
     }
