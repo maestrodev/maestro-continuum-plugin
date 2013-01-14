@@ -24,6 +24,7 @@ import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
 import org.apache.maven.continuum.xmlrpc.project.BuildResult;
 import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroupSummary;
+import org.apache.maven.continuum.xmlrpc.project.ProjectScmRoot;
 import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
 import org.fusesource.stomp.client.BlockingConnection;
 import org.fusesource.stomp.codec.StompFrame;
@@ -53,6 +54,7 @@ import static org.mockito.Mockito.*;
  */
 public class ContinuumWorkerTest {
     private static final String RUN_USERNAME = "theuser";
+    private static final int DEFAULT_BUILD_ID = 1;
     HashMap<String, Object> stompConfig;
     StompConnectionFactory stompConnectionFactory;
     BlockingConnection blockingConnection;
@@ -253,14 +255,15 @@ public class ContinuumWorkerTest {
 
     private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroupSummary group)
             throws Exception {
-        setupBuildProjectMocks(projectId, buildDefId, projectName, group, 0);
+        setupBuildProjectMocks(projectId, buildDefId, projectName, group, DEFAULT_BUILD_ID);
     }
 
-    private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroupSummary group, int buildResultId)
+    private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroupSummary group, int buildId)
             throws Exception {
         ProjectSummary projectSummary = new ProjectSummary();
         projectSummary.setName(projectName);
         projectSummary.setId(projectId);
+        projectSummary.setLatestBuildId(DEFAULT_BUILD_ID);
 
         when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Collections.singletonList(group));
         when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(projectSummary));
@@ -288,7 +291,7 @@ public class ContinuumWorkerTest {
 
         BuildResult buildResult = new BuildResult();
         buildResult.setExitCode(0);
-        buildResult.setId(buildResultId);
+        buildResult.setId(buildId);
         buildResult.setProject(project);
         when(continuumXmlRpcClient.getBuildOutput(Matchers.any(int.class), Matchers.any(int.class))).thenReturn("");
         when(continuumXmlRpcClient.getLatestBuildResult(projectId)).thenReturn(buildResult);
@@ -334,6 +337,43 @@ public class ContinuumWorkerTest {
         verifyForced(projectId, buildDefId);
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testBuildWithScmError() throws Exception {
+        int projectId = 1;
+        int buildDefId = 1;
+
+        setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup());
+        when(continuumXmlRpcClient.getProjectScmRootByProject(1)).thenReturn(createScmRootWithError());
+
+        JSONObject fields = createContinuumFields();
+        fields.put("group_name", "HelloWorld");
+        fields.put("group_id", "com.maestrodev");
+        fields.put("project_name", "HelloWorld");
+        fields.put("project_group", "com.maestrodev");
+        fields.put("goals", "clean test install package");
+        fields.put("arguments", "--batch-mode");
+        fields.put("facts", new JSONObject());
+        fields.put("composition", "Test Composition");
+
+        JSONObject params = new JSONObject();
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
+        fields.put("params", params);
+
+        createWorkItem(fields);
+
+        continuumWorker.build();
+
+        assertThat(continuumWorker.getError(), is("Continuum Build Failed: Error updating from SCM: Foo"));
+    }
+
+    private static ProjectScmRoot createScmRootWithError() {
+        ProjectScmRoot scmRoot = new ProjectScmRoot();
+        scmRoot.setState(ContinuumProjectState.ERROR);
+        scmRoot.setError("Foo");
+        return scmRoot;
     }
 
     private void verifyForced(int projectId, int buildDefId) throws Exception {
@@ -384,7 +424,7 @@ public class ContinuumWorkerTest {
     public void testBuildWithForce() throws Exception {
         int projectId = 1;
         int buildDefId = 1;
-        int buildId = 1;
+        int buildId = 2;
 
         setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup(), buildId);
 

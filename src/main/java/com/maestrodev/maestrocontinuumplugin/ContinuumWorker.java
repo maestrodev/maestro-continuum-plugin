@@ -28,6 +28,7 @@ import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
 import org.apache.maven.continuum.xmlrpc.project.BuildResult;
 import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroupSummary;
+import org.apache.maven.continuum.xmlrpc.project.ProjectScmRoot;
 import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
 import org.apache.maven.continuum.xmlrpc.project.Schedule;
 import org.apache.maven.continuum.xmlrpc.system.Profile;
@@ -435,8 +436,14 @@ public class ContinuumWorker extends MaestroWorker {
         if (result == null) {
             throw new Exception("Unable to get build result for completed build for project: " + project.getId());
         }
-        if (result.getExitCode() != 0) {
+        if (result.getExitCode() != 0 || StringUtils.isNotEmpty(result.getError())) {
             throw new Exception(result.getError());
+        }
+        ProjectScmRoot scmRoot = client.getProjectScmRootByProject(projectId);
+        if (scmRoot != null) {
+            if (scmRoot.getState() == ContinuumProjectState.ERROR || StringUtils.isNotEmpty(scmRoot.getError())) {
+                throw new Exception("Error updating from SCM: " + scmRoot.getError());
+            }
         }
         return result;
     }
