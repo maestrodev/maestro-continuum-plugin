@@ -85,7 +85,6 @@ public class ContinuumWorker extends MaestroWorker {
         List<BuildAgentConfiguration> buildAgents = client.getAllBuildAgents();
 
         for (BuildAgentConfiguration buildAgent : buildAgents) {
-            writeOutput(buildAgent.getUrl() + " vs " + url); // TODO
             if (buildAgent.getUrl().equals(url)) {
                 writeOutput("Making Sure Agent Is Enabled\n");
                 buildAgent.setEnabled(true);
