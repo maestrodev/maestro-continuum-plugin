@@ -321,14 +321,21 @@ public class ContinuumWorker extends MaestroWorker {
         return result;
     }
 
-    private ProjectSummary triggerBuild(ProjectSummary project, BuildDefinition buildDefinition) throws Exception {
+    private void triggerBuild(ProjectSummary project, BuildDefinition buildDefinition) throws Exception {
         int projectId = project.getId();
 
-        BuildTrigger buildTrigger = new BuildTrigger();
-        buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
-        buildTrigger.setTriggeredBy(getUsername());
+        // We can't construct a SCHEDULED trigger, as Continuum currently overrides it internally. Instead, call a
+        // method that uses a scheduled default trigger if needed
         try {
-            client.buildProject(project.getId(), buildDefinition.getId(), buildTrigger);
+            if (isForceBuild()) {
+                BuildTrigger buildTrigger = new BuildTrigger();
+                buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
+                buildTrigger.setTriggeredBy(getUsername());
+                client.buildProject(projectId, buildDefinition.getId(), buildTrigger);
+            } else {
+                // Trigger a "scheduled" build
+                client.addProjectToBuildQueue(projectId, buildDefinition.getId());
+            }
         } catch (Exception ex) {
             throw new Exception("Failed To Trigger Build " + ex.getMessage());
         }
@@ -338,7 +345,11 @@ public class ContinuumWorker extends MaestroWorker {
 
         writeOutput("Waiting For Build To Start\n");
 
-        while (project.getState() != ContinuumProjectState.BUILDING) {
+        // Preparing is good enough to start - building might pass too quickly
+        // TODO: using the queue may be better as it should immediately recognised
+        while (project.getState() != ContinuumProjectState.BUILDING &&
+                project.getState() != ContinuumProjectState.CHECKING_OUT &&
+                project.getState() != ContinuumProjectState.UPDATING) {
             // TODO: need an appropriate way to cancel a build that hasn't started if we get a cancelled signal
 
             if (System.currentTimeMillis() - start > timeout) {
@@ -352,11 +363,10 @@ public class ContinuumWorker extends MaestroWorker {
                     }
                 }
             }
-            Thread.sleep(1000);
+            Thread.sleep(250);
 
             project = client.getProjectSummary(projectId);
         }
-        return project;
     }
 
     private Schedule getMaestroSchedule() throws Exception {
@@ -382,10 +392,8 @@ public class ContinuumWorker extends MaestroWorker {
 
     }
 
-    private void waitForBuild(int projectId) throws Exception {
+    private BuildResult waitForBuild(int projectId) throws Exception {
         ProjectSummary project = client.getProjectSummary(projectId);
-        String output;
-        String runningTotal = "";
         while (project.getState() != ContinuumProjectState.OK && project.getState() != ContinuumProjectState.FAILED &&
                 project.getState() != ContinuumProjectState.ERROR && project.getState() != ContinuumProjectState.NEW) {
             if (isCancelled()) {
@@ -416,12 +424,6 @@ public class ContinuumWorker extends MaestroWorker {
             project = client.getProjectSummary(projectId);
         }
 
-        String newOutput = client.getBuildOutput(projectId, project.getLatestBuildId());
-
-        output = newOutput.replace(runningTotal, "");
-
-        writeOutput(output);
-
         BuildResult result = getBuildResult(projectId);
         if (result == null) {
             throw new Exception("Unable to get build result for completed build for project: " + project.getId());
@@ -429,6 +431,7 @@ public class ContinuumWorker extends MaestroWorker {
         if (result.getExitCode() != 0) {
             throw new Exception(result.getError());
         }
+        return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -490,25 +493,35 @@ public class ContinuumWorker extends MaestroWorker {
                 buildDefinition = getBuildDefinitionFromProject(goals, arguments, buildFile, project.getId(), profile, taskId);
             }
 
+            int previousBuildId = project.getLatestBuildId();
+
             writeOutput("Retrieved Build Definition " + buildDefinition.getId() + "\n");
 
             writeOutput("Triggering Build " + goals + "\n");
-            project = triggerBuild(project, buildDefinition);
+            triggerBuild(project, buildDefinition);
             writeOutput("The Build Has Started\n");
 
-            waitForBuild(project.getId());
+            BuildResult result = waitForBuild(project.getId());
 
             if (context == null)
                 context = new JSONObject();
             context.put(BUILD_DEFINITION_ID, buildDefinition.getId());
-            context.put(BUILD_ID, project.getLatestBuildId());
+            context.put(BUILD_ID, result.getId());
 
             setField(CONTEXT_OUTPUTS, context);
 
-            BuildResult buildResult = getBuildResult(project.getId());
-            if (buildResult != null) {
-                addLink("Continuum Build " + project.getBuildNumber(), buildResult.getBuildUrl());
+            if (result.getId() == previousBuildId) {
+                notNeeded();
+
+                writeOutput("No SCM changes detected, build not required - previous build was #" +
+                        result.getBuildNumber() + "\n");
+            } else {
+                writeOutput("Completed build #" + result.getBuildNumber() + "\n");
+
+                writeOutput(client.getBuildOutput(project.getId(), project.getLatestBuildId()));
             }
+
+            addLink("Continuum Build " + result.getBuildNumber(), result.getBuildUrl());
         } catch (Exception e) {
             logger.log(Level.WARNING, e.getLocalizedMessage(), e);
             setError("Continuum Build Failed: " + e.getMessage());
@@ -705,6 +718,10 @@ public class ContinuumWorker extends MaestroWorker {
 
     private boolean isUseSsl() {
         return Boolean.parseBoolean(getField("use_ssl"));
+    }
+
+    private boolean isForceBuild() {
+        return Boolean.parseBoolean(getField("force_build"));
     }
 
     private String getUsername() {

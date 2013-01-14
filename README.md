@@ -33,6 +33,7 @@ Build Agent to be configured in the Continuum Master.
 * **timeout** Seconds To Wait For Build To Begin
 * **web_path** Context Path Of The Continuum Server
 * **use_ssl** Use SSL When Connecting To Continuum
+* **force_build** Build If No Update Is Found
 
 
 ## The Add Shell Project Task

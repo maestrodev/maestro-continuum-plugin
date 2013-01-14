@@ -35,7 +35,8 @@
           "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
           "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
           "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
-          "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
+          "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"},
+          "force_build":{"value": false, "type": "Boolean", "required": false, "description": "Build If No Update Is Found"}
         },
         "outputs" : {},
         "tool_name":"Build",

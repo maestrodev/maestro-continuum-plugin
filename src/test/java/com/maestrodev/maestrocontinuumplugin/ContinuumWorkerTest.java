@@ -17,6 +17,7 @@
 package com.maestrodev.maestrocontinuumplugin;
 
 import com.maestrodev.StompConnectionFactory;
+import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
 import org.apache.maven.continuum.xmlrpc.project.AddingResult;
 import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
@@ -25,9 +26,12 @@ import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroupSummary;
 import org.apache.maven.continuum.xmlrpc.project.ProjectSummary;
 import org.fusesource.stomp.client.BlockingConnection;
+import org.fusesource.stomp.codec.StompFrame;
 import org.json.simple.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Matchers;
 
 import java.lang.reflect.InvocationTargetException;
@@ -41,8 +45,8 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit test for simple App.
@@ -248,6 +252,11 @@ public class ContinuumWorkerTest {
 
     private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroupSummary group)
             throws Exception {
+        setupBuildProjectMocks(projectId, buildDefId, projectName, group, 0);
+    }
+
+    private void setupBuildProjectMocks(int projectId, int buildDefId, String projectName, ProjectGroupSummary group, int buildResultId)
+            throws Exception {
         ProjectSummary projectSummary = new ProjectSummary();
         projectSummary.setName(projectName);
         projectSummary.setId(projectId);
@@ -278,6 +287,7 @@ public class ContinuumWorkerTest {
 
         BuildResult buildResult = new BuildResult();
         buildResult.setExitCode(0);
+        buildResult.setId(buildResultId);
         when(continuumXmlRpcClient.getBuildOutput(Matchers.any(int.class), Matchers.any(int.class))).thenReturn("");
         when(continuumXmlRpcClient.getLatestBuildResult(projectId)).thenReturn(buildResult);
     }
@@ -309,6 +319,7 @@ public class ContinuumWorkerTest {
         fields.put("arguments", "--batch-mode");
         fields.put("facts", new JSONObject());
         fields.put("composition", "Test Composition");
+        fields.put("force_build", true);
 
         JSONObject params = new JSONObject();
         params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
@@ -318,8 +329,88 @@ public class ContinuumWorkerTest {
 
         continuumWorker.build();
 
+        verifyForced(projectId, buildDefId);
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
+    }
+
+    private void verifyForced(int projectId, int buildDefId) throws Exception {
+        ArgumentCaptor<BuildTrigger> buildTrigger = ArgumentCaptor.forClass(BuildTrigger.class);
+        verify(continuumXmlRpcClient).buildProject(eq(projectId), eq(buildDefId), buildTrigger.capture());
+        assertEquals(ContinuumProjectState.TRIGGER_FORCED, buildTrigger.getValue().getTrigger());
+        assertEquals("admin", buildTrigger.getValue().getTriggeredBy());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testBuildWithoutForceNotNeeded() throws Exception {
+        int projectId = 1;
+        int buildDefId = 1;
+
+        setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup());
+
+        JSONObject fields = createContinuumFields();
+        fields.put("group_name", "HelloWorld");
+        fields.put("group_id", "com.maestrodev");
+        fields.put("project_name", "HelloWorld");
+        fields.put("project_group", "com.maestrodev");
+        fields.put("goals", "clean test install package");
+        fields.put("arguments", "--batch-mode");
+        fields.put("facts", new JSONObject());
+        fields.put("composition", "Test Composition");
+        fields.put("force_build", false);
+
+        JSONObject params = new JSONObject();
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
+        fields.put("params", params);
+
+        createWorkItem(fields);
+
+        continuumWorker.build();
+
+        verify(continuumXmlRpcClient).addProjectToBuildQueue(projectId, buildDefId);
+
+        assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
+
+        verify(blockingConnection, atLeast(0)).send(argThat(new StompFrameMatcher("__output__")));
+        verify(blockingConnection).send(argThat(new StompFrameMatcher("__not_needed__")));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testBuildWithForce() throws Exception {
+        int projectId = 1;
+        int buildDefId = 1;
+        int buildId = 1;
+
+        setupBuildProjectMocks(projectId, buildDefId, "HelloWorld", createProjectGroup(), buildId);
+
+        JSONObject fields = createContinuumFields();
+        fields.put("group_name", "HelloWorld");
+        fields.put("group_id", "com.maestrodev");
+        fields.put("project_name", "HelloWorld");
+        fields.put("project_group", "com.maestrodev");
+        fields.put("goals", "clean test install package");
+        fields.put("arguments", "--batch-mode");
+        fields.put("facts", new JSONObject());
+        fields.put("composition", "Test Composition");
+        fields.put("force_build", true);
+
+        JSONObject params = new JSONObject();
+        params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
+        fields.put("params", params);
+
+        createWorkItem(fields);
+
+        continuumWorker.build();
+
+        verifyForced(projectId, buildDefId);
+
+        assertThat(getBuildDefinitionId(), is(buildDefId));
+        assertThat(getBuildId(), is(buildId));
+        assertThat(continuumWorker.getError(), is(nullValue()));
+        verify(blockingConnection, never()).send(argThat(new StompFrameMatcher("__not_needed__")));
     }
 
     @SuppressWarnings("unchecked")
@@ -355,6 +446,7 @@ public class ContinuumWorkerTest {
         fields.put("arguments", "--batch-mode");
         fields.put("facts", new JSONObject());
         fields.put("composition", "Test Composition");
+        fields.put("force_build", true);
 
         JSONObject params = new JSONObject();
         params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
@@ -364,6 +456,7 @@ public class ContinuumWorkerTest {
 
         continuumWorker.build();
 
+        verifyForced(project.getId(), buildDefId);
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
 
@@ -379,6 +472,7 @@ public class ContinuumWorkerTest {
         fields.put("arguments", "--batch-mode");
         fields.put("facts", new JSONObject());
         fields.put("composition", "Test Composition");
+        fields.put("force_build", true);
 
         params = new JSONObject();
         params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
@@ -388,6 +482,7 @@ public class ContinuumWorkerTest {
 
         continuumWorker.build();
 
+        verifyForced(project2.getId(), buildDefId2);
         assertThat(getBuildDefinitionId(), is(buildDefId2));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -408,6 +503,7 @@ public class ContinuumWorkerTest {
         fields.put("arguments", "--batch-mode");
         fields.put("composition", "Test Composition");
         fields.put("facts", new JSONObject());
+        fields.put("force_build", true);
 
         JSONObject params = new JSONObject();
         params.put(ContinuumWorker.PARAMS_COMPOSITION_TASK_ID, 1L);
@@ -421,6 +517,7 @@ public class ContinuumWorkerTest {
 
         continuumWorker.build();
 
+        verifyForced(projectId, buildDefId);
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -443,6 +540,7 @@ public class ContinuumWorkerTest {
         fields.put("arguments", "--batch-mode");
         fields.put("composition", "Test Composition");
         fields.put("facts", new JSONObject());
+        fields.put("force_build", true);
 
         JSONObject previousContextOutputs = new JSONObject();
         previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, (long) buildDefId);
@@ -457,6 +555,7 @@ public class ContinuumWorkerTest {
 
         continuumWorker.build();
 
+        verifyForced(projectId, buildDefId);
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -478,6 +577,7 @@ public class ContinuumWorkerTest {
         fields.put("arguments", "--batch-mode -DskipTests");
         fields.put("composition", "Test Composition");
         fields.put("facts", new JSONObject());
+        fields.put("force_build", true);
 
         JSONObject previousContextOutputs = new JSONObject();
         previousContextOutputs.put(ContinuumWorker.BUILD_DEFINITION_ID, (long) buildDefId);
@@ -491,6 +591,7 @@ public class ContinuumWorkerTest {
 
         continuumWorker.build();
 
+        verifyForced(projectId, buildDefId);
         assertThat(getBuildDefinitionId(), is(buildDefId));
         assertThat(continuumWorker.getError(), is(nullValue()));
     }
@@ -505,6 +606,7 @@ public class ContinuumWorkerTest {
         fields.put("goals", "clean test install package");
         fields.put("arguments", "--batch-mode");
         fields.put("composition", "Test Composition");
+        fields.put("force_build", true);
 
         Map agentFacts = new JSONObject();
 
@@ -591,8 +693,27 @@ public class ContinuumWorkerTest {
         return Integer.valueOf(output.get(ContinuumWorker.BUILD_DEFINITION_ID).toString());
     }
 
+    private int getBuildId() {
+        JSONObject output = continuumWorker.getContext();
+        return Integer.valueOf(output.get(ContinuumWorker.BUILD_ID).toString());
+    }
+
     private int getContinuumProjectId() {
         JSONObject output = continuumWorker.getContext();
         return Integer.valueOf(output.get(ContinuumWorker.CONTINUUM_PROJECT_ID).toString());
+    }
+
+    private class StompFrameMatcher extends ArgumentMatcher<StompFrame> {
+        private final String text;
+
+        public StompFrameMatcher(String text) {
+            this.text = text;
+        }
+
+        @Override
+        public boolean matches(Object o) {
+            StompFrame f = (StompFrame) o;
+            return f.contentAsString().contains(text);
+        }
     }
 }
