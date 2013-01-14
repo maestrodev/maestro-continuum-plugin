@@ -29,7 +29,7 @@
           "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project Group"},
           "goals":{"value" : "clean deploy", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
           "arguments":{"value" : "--batch-mode -e", "type" : "String", "required" : false, "description":"Arguments To Pass To Maven Or The Build File"},
-          "build_file":{"value" : "", "type" : "String", "required" : true, "description":"Maven Pom Or Shell Executable"},
+          "build_file":{"value" : "pom.xml", "type" : "String", "required" : true, "description":"Maven POM Or Shell Executable"},
           "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
           "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
           "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
