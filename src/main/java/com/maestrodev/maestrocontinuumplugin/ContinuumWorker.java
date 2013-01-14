@@ -329,7 +329,7 @@ public class ContinuumWorker extends MaestroWorker {
             if (isForceBuild()) {
                 BuildTrigger buildTrigger = new BuildTrigger();
                 buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
-                buildTrigger.setTriggeredBy(getUsername());
+                buildTrigger.setTriggeredBy(getRunUsername());
                 client.buildProject(projectId, buildDefinition.getId(), buildTrigger);
             } else {
                 // Trigger a "scheduled" build
@@ -366,6 +366,14 @@ public class ContinuumWorker extends MaestroWorker {
 
             project = client.getProjectSummary(projectId);
         }
+    }
+
+    private String getRunUsername() {
+        JSONObject runOptions = (JSONObject) getFields().get("run_options");
+        if (runOptions != null) {
+            return (String) runOptions.get("username");
+        }
+        return null;
     }
 
     private Schedule getMaestroSchedule() throws Exception {

@@ -52,6 +52,7 @@ import static org.mockito.Mockito.*;
  * Unit test for simple App.
  */
 public class ContinuumWorkerTest {
+    private static final String RUN_USERNAME = "theuser";
     HashMap<String, Object> stompConfig;
     StompConnectionFactory stompConnectionFactory;
     BlockingConnection blockingConnection;
@@ -338,7 +339,7 @@ public class ContinuumWorkerTest {
         ArgumentCaptor<BuildTrigger> buildTrigger = ArgumentCaptor.forClass(BuildTrigger.class);
         verify(continuumXmlRpcClient).buildProject(eq(projectId), eq(buildDefId), buildTrigger.capture());
         assertEquals(ContinuumProjectState.TRIGGER_FORCED, buildTrigger.getValue().getTrigger());
-        assertEquals("admin", buildTrigger.getValue().getTriggeredBy());
+        assertEquals(RUN_USERNAME, buildTrigger.getValue().getTriggeredBy());
     }
 
     @SuppressWarnings("unchecked")
@@ -649,6 +650,11 @@ public class ContinuumWorkerTest {
         fields.put("web_path", "/continuum");
         fields.put("use_ssl", false);
         fields.put(ContinuumWorker.CONTEXT_OUTPUTS, new JSONObject());
+
+        JSONObject runOptions = new JSONObject();
+        runOptions.put("username", RUN_USERNAME);
+        fields.put("run_options", runOptions);
+
         return fields;
     }
 
