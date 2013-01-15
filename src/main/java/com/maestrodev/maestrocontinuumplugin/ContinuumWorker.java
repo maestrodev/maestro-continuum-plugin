@@ -450,6 +450,7 @@ public class ContinuumWorker extends MaestroWorker {
             throw new Exception("Unable to get build result for completed build for project: " + project.getId());
         }
         if (result.getExitCode() != 0 || StringUtils.isNotEmpty(result.getError())) {
+            writeOutput(client.getBuildOutput(projectId, result.getId()));
             throw new Exception(result.getError());
         }
         ProjectScmRoot scmRoot = client.getProjectScmRootByProject(projectId);
