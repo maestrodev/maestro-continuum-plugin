@@ -454,7 +454,7 @@ public class ContinuumWorker extends MaestroWorker {
         }
         ProjectScmRoot scmRoot = client.getProjectScmRootByProject(projectId);
         if (scmRoot != null) {
-            if (scmRoot.getState() == ContinuumProjectState.ERROR || StringUtils.isNotEmpty(scmRoot.getError())) {
+            if (scmRoot.getState() == ContinuumProjectState.ERROR) {
                 throw new Exception("Error updating from SCM: " + scmRoot.getError());
             }
         }
