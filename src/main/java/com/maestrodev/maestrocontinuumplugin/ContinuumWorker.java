@@ -25,7 +25,6 @@ import org.apache.maven.continuum.xmlrpc.project.AddingResult;
 import org.apache.maven.continuum.xmlrpc.project.BuildAgentConfiguration;
 import org.apache.maven.continuum.xmlrpc.project.BuildAgentGroupConfiguration;
 import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
-import org.apache.maven.continuum.xmlrpc.project.BuildProjectTask;
 import org.apache.maven.continuum.xmlrpc.project.BuildResult;
 import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroupSummary;
@@ -334,6 +333,7 @@ public class ContinuumWorker extends MaestroWorker {
 
     private void triggerBuild(ProjectSummary project, BuildDefinition buildDefinition) throws Exception {
         int projectId = project.getId();
+        int buildDefinitionId = buildDefinition.getId();
 
         // We can't construct a SCHEDULED trigger, as Continuum currently overrides it internally. Instead, call a
         // method that uses a scheduled default trigger if needed
@@ -342,10 +342,10 @@ public class ContinuumWorker extends MaestroWorker {
                 BuildTrigger buildTrigger = new BuildTrigger();
                 buildTrigger.setTrigger(ContinuumProjectState.TRIGGER_FORCED);
                 buildTrigger.setTriggeredBy(getRunUsername());
-                client.buildProject(projectId, buildDefinition.getId(), buildTrigger);
+                client.buildProject(projectId, buildDefinitionId, buildTrigger);
             } else {
                 // Trigger a "scheduled" build
-                client.addProjectToBuildQueue(projectId, buildDefinition.getId());
+                client.addProjectToBuildQueue(projectId, buildDefinitionId);
             }
         } catch (Exception ex) {
             throw new Exception("Failed To Trigger Build " + ex.getMessage());
@@ -359,35 +359,26 @@ public class ContinuumWorker extends MaestroWorker {
         // we are waiting if:
         //  - it is checking out or updating
         //  - it is currently in a queue
-        // There's a small risk we miss the build if Continuum is slow to set the initial state. Continuum would need to
-        // be enhanced to ensure there is always an initial state set to avoid this
-
-        boolean waiting;
-        String label = createGeneratedDescription();
-        do {
-            waiting = false;
-
+        // This should cover all cases until it is building, or complete
+        // We can't just check for building or complete because it might not build (or do so fast) if there are no SCM
+        // changes, and it is initially in a complete state until it hits one of the queues
+        boolean waiting = true;
+        while (waiting) {
             project = client.getProjectSummary(projectId);
 
-            if (project.getState() == ContinuumProjectState.CHECKING_OUT || project.getState() == ContinuumProjectState.UPDATING) {
-                waiting = true;
-            } else {
-                for (BuildProjectTask task : client.getProjectsInBuildQueue()) {
-                    if (task.getBuildDefinitionLabel().equals(label)) {
-                        waiting = true;
-                    }
-                }
-            }
-
-            if (waiting) {
+            if (project.getState() == ContinuumProjectState.CHECKING_OUT ||
+                    project.getState() == ContinuumProjectState.UPDATING ||
+                    client.isProjectInPrepareBuildQueue(projectId, buildDefinitionId) ||
+                    client.isProjectInBuildingQueue(projectId, buildDefinitionId) ||
+                    client.isProjectCurrentlyPreparingBuild(projectId, buildDefinitionId)) {
                 if (System.currentTimeMillis() - start > buildStartTimeout) {
                     throw new TimeoutException("Failed To Detect Build Start After " + (buildStartTimeout / 1000) + " Seconds");
                 }
                 Thread.sleep(250);
+            } else {
+                waiting = false;
             }
         }
-        while (waiting);
-
         setWaiting(false);
     }
 

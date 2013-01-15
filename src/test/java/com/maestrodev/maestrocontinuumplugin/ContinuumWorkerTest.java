@@ -21,7 +21,6 @@ import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
 import org.apache.maven.continuum.xmlrpc.project.AddingResult;
 import org.apache.maven.continuum.xmlrpc.project.BuildDefinition;
-import org.apache.maven.continuum.xmlrpc.project.BuildProjectTask;
 import org.apache.maven.continuum.xmlrpc.project.BuildResult;
 import org.apache.maven.continuum.xmlrpc.project.ContinuumProjectState;
 import org.apache.maven.continuum.xmlrpc.project.ProjectGroupSummary;
@@ -378,10 +377,10 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        when(continuumXmlRpcClient.getProjectsInBuildQueue())
-                .thenReturn(Collections.singletonList(createQueuedProjectTask()))
-                .thenReturn(Collections.singletonList(createQueuedProjectTask()))
-                .thenReturn(Collections.<BuildProjectTask>emptyList());
+        when(continuumXmlRpcClient.isProjectInBuildingQueue(projectId, buildDefId))
+                .thenReturn(true)
+                .thenReturn(true)
+                .thenReturn(false);
 
         continuumWorker.build();
 
@@ -414,19 +413,11 @@ public class ContinuumWorkerTest {
 
         createWorkItem(fields);
 
-        when(continuumXmlRpcClient.getProjectsInBuildQueue())
-                .thenReturn(Collections.singletonList(createQueuedProjectTask()))
-                .thenReturn(Collections.<BuildProjectTask>emptyList());
+        when(continuumXmlRpcClient.isProjectInBuildingQueue(projectId, buildDefId)).thenReturn(true);
 
         continuumWorker.build();
 
         assertThat(continuumWorker.getError(), is("Continuum Build Failed: Failed To Detect Build Start After 0 Seconds"));
-    }
-
-    private BuildProjectTask createQueuedProjectTask() {
-        BuildProjectTask task = new BuildProjectTask();
-        task.setBuildDefinitionLabel(DESCRIPTION);
-        return task;
     }
 
     @SuppressWarnings("unchecked")
