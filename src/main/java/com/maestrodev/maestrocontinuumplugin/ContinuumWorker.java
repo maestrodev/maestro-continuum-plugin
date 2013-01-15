@@ -534,8 +534,6 @@ public class ContinuumWorker extends MaestroWorker {
 
             BuildResult result = waitForBuild(project.getId());
 
-            if (context == null)
-                context = new JSONObject();
             context.put(BUILD_DEFINITION_ID, buildDefinition.getId());
             context.put(BUILD_ID, result.getId());
 
