@@ -538,8 +538,7 @@ public class ContinuumWorker extends MaestroWorker {
                         result.getBuildNumber() + "\n");
             } else {
                 writeOutput("Completed build #" + result.getBuildNumber() + "\n");
-
-                writeOutput(client.getBuildOutput(project.getId(), project.getLatestBuildId()));
+                writeOutput(client.getBuildOutput(project.getId(), result.getId()));
             }
 
             addLinkToBuildResult(result);
