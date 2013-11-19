@@ -19,7 +19,7 @@
 
   <groupId>com.maestrodev.maestro.plugins</groupId>
   <artifactId>maestro-continuum-plugin</artifactId>
-  <version>1.7</version>
+  <version>1.8-SNAPSHOT</version>
 
   <name>Maestro Continuum Plugin</name>
 
