@@ -64,6 +64,7 @@ public class ContinuumWorkerTest {
     ContinuumXmlRpcClientFactory continuumXmlRpcClientFactory;
     ContinuumXmlRpcClient continuumXmlRpcClient;
     ContinuumWorker continuumWorker;
+    private static final String PROJECT_POM = "https://raw.github.com/maestrodev/centrepoint/master/pom.xml";
 
 
     @Before
@@ -122,7 +123,6 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateDuplicateMavenProjectDifferentGroups() throws Exception {
-        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         String name = "HelloWorld";
 
         String groupId = "testCreateDuplicateMavenProjectDifferentGroups";
@@ -137,11 +137,11 @@ public class ContinuumWorkerTest {
         when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(project));
         when(continuumXmlRpcClient.getProjects(group2.getId())).thenReturn(Collections.singletonList(project2));
 
-        mockProjectAddition(projectPom, project, 1);
-        mockProjectAddition(projectPom, project2, 2);
+        mockProjectAddition(PROJECT_POM, project, 1);
+        mockProjectAddition(PROJECT_POM, project2, 2);
 
         JSONObject fields = createContinuumFields();
-        fields.put("pom_url", projectPom);
+        fields.put("pom_url", PROJECT_POM);
         fields.put("group_name", group.getName());
         fields.put("group_id", group.getGroupId());
         fields.put("group_description", "Description");
@@ -152,7 +152,7 @@ public class ContinuumWorkerTest {
         assertThat(continuumWorker.getError(), is(nullValue()));
 
         fields = createContinuumFields();
-        fields.put("pom_url", projectPom);
+        fields.put("pom_url", PROJECT_POM);
         fields.put("group_name", group2.getName());
         fields.put("group_id", group2.getGroupId());
         fields.put("group_description", "Description");
@@ -166,7 +166,6 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateDuplicateExistingMavenProjectDifferentGroups() throws Exception {
-        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         String name = "HelloWorld";
 
         String groupId = "testCreateDuplicateExistingMavenProjectDifferentGroups";
@@ -181,10 +180,10 @@ public class ContinuumWorkerTest {
         when(continuumXmlRpcClient.getProjects(1)).thenReturn(Collections.singletonList(project));
         when(continuumXmlRpcClient.getProjects(2)).thenReturn(Collections.singletonList(project2));
 
-        mockProjectDuplicate(projectPom, project);
+        mockProjectDuplicate(PROJECT_POM, project);
 
         JSONObject fields = createContinuumFields();
-        fields.put("pom_url", projectPom);
+        fields.put("pom_url", PROJECT_POM);
         fields.put("group_name", group.getName());
         fields.put("group_id", group.getGroupId());
         fields.put("group_description", "Description");
@@ -194,10 +193,10 @@ public class ContinuumWorkerTest {
         assertThat(getContinuumProjectId(), is(equalTo(project.getId())));
         assertThat(continuumWorker.getError(), is(nullValue()));
 
-        mockProjectDuplicate(projectPom, project2);
+        mockProjectDuplicate(PROJECT_POM, project2);
 
         fields = createContinuumFields();
-        fields.put("pom_url", projectPom);
+        fields.put("pom_url", PROJECT_POM);
         fields.put("group_name", group2.getName());
         fields.put("group_id", group2.getGroupId());
         fields.put("group_description", "Description");
@@ -211,7 +210,6 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateDuplicateMavenProjectWithPom() throws Exception {
-        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         ProjectSummary project = createProject("com.maestrodev", "HelloWorld", 1);
 
         ProjectGroupSummary group = new ProjectGroupSummary();
@@ -223,10 +221,10 @@ public class ContinuumWorkerTest {
         when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Collections.singletonList(group));
         when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(project));
 
-        mockProjectDuplicate(projectPom, project, group, ContinuumWorker.NO_PROJECT_GROUP);
+        mockProjectDuplicate(PROJECT_POM, project, group, ContinuumWorker.NO_PROJECT_GROUP);
 
         JSONObject fields = createContinuumFields();
-        fields.put("pom_url", projectPom);
+        fields.put("pom_url", PROJECT_POM);
 
         createWorkItem(fields);
 
@@ -239,14 +237,12 @@ public class ContinuumWorkerTest {
     @Test
     public void testCreateMavenProjectWithPom() throws Exception {
 
-        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
-
         ProjectSummary project = createProject("com.maestrodev", "HelloWorld", 1);
 
-        mockProjectAddition(projectPom, project);
+        mockProjectAddition(PROJECT_POM, project);
 
         JSONObject fields = createContinuumFields();
-        fields.put("pom_url", projectPom);
+        fields.put("pom_url", PROJECT_POM);
 
         createWorkItem(fields);
 
@@ -533,7 +529,6 @@ public class ContinuumWorkerTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testBuildDuplicateMavenProjectDifferentGroups() throws Exception {
-        String projectPom = "https://raw.github.com/etiennep/centrepoint/master/pom.xml";
         String name = "HelloWorld";
 
         String groupId = "testBuildDuplicateMavenProjectDifferentGroups";
@@ -548,8 +543,8 @@ public class ContinuumWorkerTest {
         when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.singletonList(project));
         when(continuumXmlRpcClient.getProjects(group2.getId())).thenReturn(Collections.singletonList(project2));
 
-        mockProjectAddition(projectPom, project, 1);
-        mockProjectAddition(projectPom, project2, 2);
+        mockProjectAddition(PROJECT_POM, project, 1);
+        mockProjectAddition(PROJECT_POM, project2, 2);
 
         int buildDefId = 1;
         setupBuildProjectMocks(project.getId(), buildDefId, project.getName(), group);
