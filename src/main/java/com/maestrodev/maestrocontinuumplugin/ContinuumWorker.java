@@ -701,7 +701,7 @@ public class ContinuumWorker extends MaestroWorker {
 
             populateContextData(projectSummary);
 
-            writeOutput("Successfully Processed Maven Project Project\n");
+            writeOutput( "Successfully Processed Maven Project " + projectSummary.getName() + "\n" );
         } catch (Exception e) {
             logger.log(Level.FINE, e.getLocalizedMessage(), e);
             setError("Continuum Build Failed: " + e.getMessage());
