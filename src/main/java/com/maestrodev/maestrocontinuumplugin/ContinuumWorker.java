@@ -35,6 +35,8 @@ import org.apache.maven.continuum.xmlrpc.system.Profile;
 import org.json.simple.JSONObject;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
@@ -422,7 +424,7 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private BuildResult waitForBuild(int projectId) throws Exception {
-        ProjectSummary project = client.getProjectSummary(projectId);
+        ProjectSummary project = client.getProjectSummary( projectId );
         while (project.getState() != ContinuumProjectState.OK && project.getState() != ContinuumProjectState.FAILED &&
                 project.getState() != ContinuumProjectState.ERROR && project.getState() != ContinuumProjectState.NEW) {
             if (isCancelled()) {
@@ -573,7 +575,7 @@ public class ContinuumWorker extends MaestroWorker {
             String tag = getScmTag();
             boolean useReleaseProfile = isUseReleaseProfile();
 
-            Map<String, Object> properties = client.getReleasePluginParameters(project.getId());
+            Map<String, Object> properties = client.getReleasePluginParameters( project.getId() );
 
             if (StringUtils.isNotBlank(arguments)) {
                 properties.put("arguments", arguments);
@@ -593,9 +595,9 @@ public class ContinuumWorker extends MaestroWorker {
             // list of projects which might be released. Better in that case to just call maven release:prepare
 
             Properties releaseProperties = new Properties();
-            releaseProperties.putAll(properties);
+            releaseProperties.putAll( properties );
 
-            writeOutput("Preparing the release\n");
+            writeOutput( "Preparing the release\n" );
             String releaseId = client.releasePrepare(project.getId(), releaseProperties, releaseVersions,
                     developmentVersions, getBuildEnvironments(project.getId()), getRunUsername());
 
@@ -610,8 +612,8 @@ public class ContinuumWorker extends MaestroWorker {
             }
 
             writeOutput("Performing the release\n");
-            client.releasePerform(project.getId(), releaseId, performGoals, arguments, useReleaseProfile, "DEFAULT",
-                    getRunUsername());
+            client.releasePerform( project.getId(), releaseId, performGoals, arguments, useReleaseProfile, "DEFAULT",
+                                   getRunUsername() );
 
             while (releaseInProgress(project.getId(), releaseId)) {
                 Thread.sleep(5000);
@@ -791,7 +793,7 @@ public class ContinuumWorker extends MaestroWorker {
     private ProjectSummary createMavenProject(ProjectGroupSummary projectGroup) throws Exception {
         int projectGroupId = projectGroup != null ? projectGroup.getId() : NO_PROJECT_GROUP;
 
-        String pomUrl = getPomUrl();
+        String pomUrl = getPomUrlWithCredentials();
         AddingResult result = client.addMavenTwoProject( pomUrl, projectGroupId, true, true, true,
                                                          isSingleDirectory() );
         ProjectSummary project = null;
@@ -827,6 +829,20 @@ public class ContinuumWorker extends MaestroWorker {
         return project;
     }
 
+    private String getPomUrlWithCredentials()
+        throws URISyntaxException
+    {
+        String pomUrl = getPomUrl();
+        String pomUsername = getPomUsername();
+        if ( pomUsername != null )
+        {
+            URI u = new URI( pomUrl );
+            pomUrl = new URI( u.getScheme(), pomUsername + ":" + getPomPassword(), u.getHost(), u.getPort(),
+                              u.getPath(), u.getQuery(), u.getFragment() ).toString();
+        }
+        return pomUrl;
+    }
+
     JSONObject getContext() {
         JSONObject outputData = (JSONObject) getFields().get(CONTEXT_OUTPUTS);
         if (outputData == null) {
@@ -849,7 +865,7 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private URL getUrl() throws MalformedURLException {
-        return getUrl("/xmlrpc");
+        return getUrl( "/xmlrpc" );
     }
 
     private URL getBaseUrl() throws MalformedURLException {
@@ -869,7 +885,7 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private String getHost() {
-        return getField("host");
+        return getField( "host" );
     }
 
     private int getPort() {
@@ -881,19 +897,19 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private boolean isUseSsl() {
-        return Boolean.parseBoolean(getField("use_ssl"));
+        return Boolean.parseBoolean( getField( "use_ssl" ) );
     }
 
     private boolean isForceBuild() {
-        return Boolean.parseBoolean(getField("force_build"));
+        return Boolean.parseBoolean( getField( "force_build" ) );
     }
 
     private String getUsername() {
-        return getField("username");
+        return getField( "username" );
     }
 
     private String getPassword() {
-        return getField("password");
+        return getField( "password" );
     }
 
     private JSONObject getParams() {
@@ -901,7 +917,7 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private String getGoals() {
-        return getNonNullField("goals");
+        return getNonNullField( "goals" );
     }
 
     private String getPrepareGoals() {
@@ -909,15 +925,15 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private String getPerformGoals() {
-        return getField("perform_goals");
+        return getField( "perform_goals" );
     }
 
     private String getArguments() {
-        return getNonNullField("arguments");
+        return getNonNullField( "arguments" );
     }
 
     private String getBuildFile() {
-        return getNonNullField("build_file");
+        return getNonNullField( "build_file" );
     }
 
     private String getNonNullField(String field) {
@@ -926,7 +942,7 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private String getGroupName() {
-        return getField("group_name");
+        return getField( "group_name" );
     }
 
     private String getGroupDescription() {
@@ -968,6 +984,14 @@ public class ContinuumWorker extends MaestroWorker {
 
     private String getScmPassword() {
         return getField("scm_password");
+    }
+
+    private String getPomUsername() {
+        return getField("pom_username");
+    }
+
+    private String getPomPassword() {
+        return getField("pom_password");
     }
 
     private boolean isScmUseCache() {

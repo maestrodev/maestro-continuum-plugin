@@ -9,7 +9,9 @@
             "username": "String",
             "password": "Password",
             "web_path":"String",
-            "use_ssl": "Boolean"
+            "use_ssl": "Boolean",
+            "pom_username": "String",
+            "pom_password": "Password"
           }
         }],
   "tasks" : [{ 
@@ -133,6 +135,8 @@
         "command" : "/continuum/addMavenProject",    
         "inputs" : {
           "pom_url":{"value" : "", "type" : "String", "required" : true, "description":"Remote Url Of The Pom File"},
+          "pom_username":{"value" : "", "type" : "String", "required" : false, "description":"User For Accessing POM"},
+          "pom_password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing POM"},
           "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Group That Contains The Project"},
           "group_id":{"value" : "", "type" : "String", "required" : false, "description":"Id Of The Group That Contains The Project"},
           "group_description":{"value" : "", "type" : "String", "required" : false, "description":"Description Of The Group That Contains The Project"},
