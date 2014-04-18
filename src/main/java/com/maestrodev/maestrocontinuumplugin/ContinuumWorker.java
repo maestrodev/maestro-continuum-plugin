@@ -61,7 +61,9 @@ public class ContinuumWorker extends MaestroWorker {
     static final String PREVIOUS_CONTEXT_OUTPUTS = "__previous_context_outputs__";
 
     static final String CONTINUUM_PROJECT_ID = "continuum_project_id";
+    static final String CONTINUUM_PROJECT_NAME = "continuum_project";
     static final String CONTINUUM_PROJECT_GROUP_ID = "continuum_project_group_id";
+    static final String CONTINUUM_PROJECT_GROUP_NAME = "continuum_project_group";
     static final String CONTINUUM_RELEASE_ID = "continuum_release_id";
     private static final String SCM_TAG = "scm_tag";
     static final String BUILD_DEFINITION_ID = "build_definition_id";
@@ -697,18 +699,30 @@ public class ContinuumWorker extends MaestroWorker {
             writeOutput("Processing Project In Continuum\n");
             ProjectSummary projectSummary = createMavenProject(projectGroup);
 
-            JSONObject outputData = getContext();
-            outputData.put(CONTINUUM_PROJECT_ID, projectSummary.getId());
-            setField(CONTINUUM_PROJECT_ID, projectSummary.getId());
-            outputData.put(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
-            setField(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
-            setField(CONTEXT_OUTPUTS, outputData);
+            populateContextData(projectSummary);
 
             writeOutput("Successfully Processed Maven Project Project\n");
         } catch (Exception e) {
             logger.log(Level.FINE, e.getLocalizedMessage(), e);
             setError("Continuum Build Failed: " + e.getMessage());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void populateContextData(ProjectSummary projectSummary) {
+        ProjectGroupSummary projectGroup = projectSummary.getProjectGroup();
+        JSONObject outputData = getContext();
+        outputData.put(CONTINUUM_PROJECT_ID, projectSummary.getId());
+        setField(CONTINUUM_PROJECT_ID, projectSummary.getId());
+        outputData.put(CONTINUUM_PROJECT_NAME, projectSummary.getName());
+        setField(CONTINUUM_PROJECT_NAME, projectSummary.getName());
+        if (projectGroup != null) {
+            outputData.put(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
+            setField(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
+            outputData.put(CONTINUUM_PROJECT_GROUP_NAME, projectGroup.getName());
+            setField(CONTINUUM_PROJECT_GROUP_NAME, projectGroup.getName());
+        }
+        setField(CONTEXT_OUTPUTS, outputData);
     }
 
     @SuppressWarnings("unchecked")
@@ -740,12 +754,7 @@ public class ContinuumWorker extends MaestroWorker {
             }
 
             writeOutput("Successfully Processed Shell Project " + projectName + "\n");
-            JSONObject outputData = getContext();
-            outputData.put(CONTINUUM_PROJECT_ID, projectSummary.getId());
-            setField(CONTINUUM_PROJECT_ID, projectSummary.getId());
-            outputData.put(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
-            setField(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
-            setField(CONTEXT_OUTPUTS, outputData);
+            populateContextData(projectSummary);
 
         } catch (Exception e) {
             setError("Continuum Build Failed: " + e.getMessage());
