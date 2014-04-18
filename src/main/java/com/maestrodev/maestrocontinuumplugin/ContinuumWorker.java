@@ -704,7 +704,7 @@ public class ContinuumWorker extends MaestroWorker {
             writeOutput( "Successfully Processed Maven Project " + projectSummary.getName() + "\n" );
         } catch (Exception e) {
             logger.log(Level.FINE, e.getLocalizedMessage(), e);
-            setError("Continuum Build Failed: " + e.getMessage());
+            setError( "Unable to add Continuum project: " + e );
         }
     }
 
@@ -757,15 +757,15 @@ public class ContinuumWorker extends MaestroWorker {
             populateContextData(projectSummary);
 
         } catch (Exception e) {
-            setError("Continuum Build Failed: " + e.getMessage());
+            setError( "Unable to add Continuum project: " + e );
         }
     }
 
     private ProjectGroupSummary createProjectGroup() throws Exception {
         ProjectGroupSummary projectGroup = new ProjectGroupSummary();
-        projectGroup.setDescription(getGroupDescription());
-        projectGroup.setGroupId(getGroupId());
-        projectGroup.setName(getGroupName());
+        projectGroup.setDescription( getGroupDescription() );
+        projectGroup.setGroupId( getGroupId() );
+        projectGroup.setName( getGroupName() );
         return client.addProjectGroup( projectGroup );
     }
 
