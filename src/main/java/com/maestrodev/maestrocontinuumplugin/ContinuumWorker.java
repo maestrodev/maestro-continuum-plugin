@@ -766,9 +766,7 @@ public class ContinuumWorker extends MaestroWorker {
         projectGroup.setDescription(getGroupDescription());
         projectGroup.setGroupId(getGroupId());
         projectGroup.setName(getGroupName());
-        client.addProjectGroup(projectGroup);
-
-        return projectGroup;
+        return client.addProjectGroup( projectGroup );
     }
 
     private ProjectSummary createShellProject(int projectGroupId) throws Exception {
