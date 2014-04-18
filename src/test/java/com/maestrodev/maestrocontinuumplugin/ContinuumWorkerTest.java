@@ -100,8 +100,8 @@ public class ContinuumWorkerTest {
         group.setName("HelloWorld");
         group.setGroupId("com.maestrodev");
 
-        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Collections.singletonList(group));
-        when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn(Collections.<ProjectSummary>emptyList());
+        when(continuumXmlRpcClient.getAllProjectGroups()).thenReturn(Collections.singletonList( group ));
+        when(continuumXmlRpcClient.getProjects(group.getId())).thenReturn( Collections.<ProjectSummary>emptyList() );
 
         String projectPom = "https://svn.apache.org/repos/asf/activemq/trunk/pom.xml";
         mockProjectAddition(projectPom, createProject(group.getGroupId(), "projectName", 1), 1);
@@ -777,7 +777,8 @@ public class ContinuumWorkerTest {
     private AddingResult mockProjectAddition(String projectPom, ProjectSummary project, int projectGroupId) throws Exception {
         AddingResult result = new AddingResult();
         result.addProject(project);
-        when(continuumXmlRpcClient.addMavenTwoProject(projectPom, projectGroupId)).thenReturn(result);
+        when(continuumXmlRpcClient.addMavenTwoProject(projectPom, projectGroupId)).thenReturn( result );
+        when( continuumXmlRpcClient.getProjectSummary( project.getId() ) ).thenReturn( project );
         return result;
     }
 

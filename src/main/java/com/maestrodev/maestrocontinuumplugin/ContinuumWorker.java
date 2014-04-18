@@ -824,6 +824,8 @@ public class ContinuumWorker extends MaestroWorker {
             if (project == null) {
                 throw new Exception("Unable To Create Project In " + getGroupName());
             }
+            // refresh project for name and group info
+            project = client.getProjectSummary( project.getId() );
             writeOutput("Project Created (" + project.getId() + ")\n");
         }
         return project;
