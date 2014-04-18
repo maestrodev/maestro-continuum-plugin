@@ -777,7 +777,7 @@ public class ContinuumWorkerTest {
     private AddingResult mockProjectAddition(String projectPom, ProjectSummary project, int projectGroupId) throws Exception {
         AddingResult result = new AddingResult();
         result.addProject(project);
-        when(continuumXmlRpcClient.addMavenTwoProject(projectPom, projectGroupId)).thenReturn( result );
+        when(continuumXmlRpcClient.addMavenTwoProject(projectPom, projectGroupId, true, true, true, false)).thenReturn( result );
         when( continuumXmlRpcClient.getProjectSummary( project.getId() ) ).thenReturn( project );
         return result;
     }

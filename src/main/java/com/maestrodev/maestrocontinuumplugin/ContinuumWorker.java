@@ -791,13 +791,9 @@ public class ContinuumWorker extends MaestroWorker {
     private ProjectSummary createMavenProject(ProjectGroupSummary projectGroup) throws Exception {
         int projectGroupId = projectGroup != null ? projectGroup.getId() : NO_PROJECT_GROUP;
 
-        AddingResult result;
         String pomUrl = getPomUrl();
-        if (isSingleDirectory()) {
-            result = client.addMavenTwoProjectAsSingleProject(pomUrl, projectGroupId);
-        } else {
-            result = client.addMavenTwoProject(pomUrl, projectGroupId);
-        }
+        AddingResult result = client.addMavenTwoProject( pomUrl, projectGroupId, true, true, true,
+                                                         isSingleDirectory() );
         ProjectSummary project = null;
         if (result.getProjects() != null && !result.getProjects().isEmpty()) {
             project = result.getProjects().get(0);
