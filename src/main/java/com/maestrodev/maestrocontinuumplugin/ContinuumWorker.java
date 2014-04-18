@@ -36,8 +36,11 @@ import org.json.simple.JSONObject;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,6 +61,9 @@ public class ContinuumWorker extends MaestroWorker {
     static final String PREVIOUS_CONTEXT_OUTPUTS = "__previous_context_outputs__";
 
     static final String CONTINUUM_PROJECT_ID = "continuum_project_id";
+    static final String CONTINUUM_PROJECT_GROUP_ID = "continuum_project_group_id";
+    static final String CONTINUUM_RELEASE_ID = "continuum_release_id";
+    private static final String SCM_TAG = "scm_tag";
     static final String BUILD_DEFINITION_ID = "build_definition_id";
     static final String BUILD_ID = "build_id";
 
@@ -466,23 +472,8 @@ public class ContinuumWorker extends MaestroWorker {
     public void build() {
         try {
             client = getClient();
-            ProjectSummary project;
             JSONObject context = getContext();
-            Long projectId = (Long) context.get(CONTINUUM_PROJECT_ID);
-            if (projectId != null) {
-                project = client.getProjectSummary(projectId.intValue());
-            } else {
-                String projectGroupName = getGroupName();
-                writeOutput("Searching For Project Group " + projectGroupName + "\n");
-                ProjectGroupSummary projectGroup = getProjectGroup(projectGroupName);
-                writeOutput("Found Project Group " + projectGroup.getName() + "\n");
-
-                String projectName = getProjectName();
-                writeOutput("Searching For Project " + projectName + "\n");
-
-                project = getProjectSummary(projectName, projectGroup);
-            }
-            writeOutput("Found Project " + project.getName() + " (" + project.getId() + ")\n");
+            ProjectSummary project = getProjectSummary(context);
 
             String goals = getGoals();
             String arguments = getArguments();
@@ -548,6 +539,125 @@ public class ContinuumWorker extends MaestroWorker {
         }
     }
 
+    private ProjectSummary getProjectSummary(JSONObject context) throws Exception {
+        ProjectSummary project;
+        Long projectId = (Long) context.get(CONTINUUM_PROJECT_ID);
+        if (projectId != null) {
+            project = client.getProjectSummary(projectId.intValue());
+        } else {
+            String projectGroupName = getGroupName();
+            writeOutput("Searching For Project Group " + projectGroupName + "\n");
+            ProjectGroupSummary projectGroup = getProjectGroup(projectGroupName);
+            writeOutput("Found Project Group " + projectGroup.getName() + "\n");
+
+            String projectName = getProjectName();
+            writeOutput("Searching For Project " + projectName + "\n");
+
+            project = getProjectSummary(projectName, projectGroup);
+        }
+        writeOutput("Found Project " + project.getName() + " (" + project.getId() + ")\n");
+        return project;
+    }
+
+    public void release() {
+        try {
+            client = getClient();
+            JSONObject context = getContext();
+            ProjectSummary project = getProjectSummary(context);
+
+            String prepareGoals = getPrepareGoals();
+            String performGoals = getPerformGoals();
+            String arguments = getArguments();
+            String tag = getScmTag();
+            boolean useReleaseProfile = isUseReleaseProfile();
+
+            Map<String, Object> properties = client.getReleasePluginParameters(project.getId());
+
+            if (StringUtils.isNotBlank(arguments)) {
+                properties.put("arguments", arguments);
+            }
+            if (StringUtils.isNotBlank(prepareGoals)) {
+                properties.put("preparation-goals", prepareGoals);
+            }
+            if (StringUtils.isNotBlank(tag)) {
+                properties.put("scm-tag", tag);
+            }
+            properties.put("use-release-profile", useReleaseProfile);
+
+            Map<String, String> releaseVersions = new HashMap<String, String>();
+            Map<String, String> developmentVersions = new HashMap<String, String>();
+
+            // Note currently difficult to specify version to use, even with autoversionsubmodules, without the full
+            // list of projects which might be released. Better in that case to just call maven release:prepare
+
+            Properties releaseProperties = new Properties();
+            releaseProperties.putAll(properties);
+
+            writeOutput("Preparing the release\n");
+            String releaseId = client.releasePrepare(project.getId(), releaseProperties, releaseVersions,
+                    developmentVersions, getBuildEnvironments(project.getId()), getRunUsername());
+
+            while (releaseInProgress(project.getId(), releaseId)) {
+                Thread.sleep(5000);
+            }
+
+            int releaseResultId = client.releaseCleanup(project.getId(), releaseId, "prepare");
+            // TODO: seems to be a bug where Continuum doesn't populate this
+            if (releaseResultId != 0) {
+                writeOutput(client.getReleaseOutput(releaseResultId));
+            }
+
+            writeOutput("Performing the release\n");
+            client.releasePerform(project.getId(), releaseId, performGoals, arguments, useReleaseProfile, "DEFAULT",
+                    getRunUsername());
+
+            while (releaseInProgress(project.getId(), releaseId)) {
+                Thread.sleep(5000);
+            }
+
+            releaseResultId = client.releaseCleanup(project.getId(), releaseId, "perform");
+            // TODO: seems to be a bug where Continuum doesn't populate this
+            if (releaseResultId != 0) {
+                writeOutput(client.getReleaseOutput(releaseResultId));
+            }
+
+            context.put(CONTINUUM_RELEASE_ID, releaseId);
+            context.put(SCM_TAG, tag);
+
+            setField(CONTEXT_OUTPUTS, context);
+
+            writeOutput("Completed release\n");
+
+        } catch (Exception e) {
+            logger.log(Level.WARNING, e.getLocalizedMessage(), e);
+            setError("Continuum Release Failed: " + e.getMessage());
+        }
+    }
+
+    private Map<String, String> getBuildEnvironments(int projectId) throws Exception {
+        BuildResult buildResult = client.getLatestBuildResult(projectId);
+
+        String buildAgentUrl;
+        if (buildResult == null) {
+            // TODO: could use the fact as with the build here too
+
+            // Note, no filtering is done on requirements of agent
+            writeOutput("Using first available build agent to perform release");
+            List<BuildAgentConfiguration> buildAgents = client.getAllBuildAgents();
+            if (buildAgents.isEmpty()) {
+                throw new Exception("There are no build agents available in Continuum");
+            }
+            buildAgentUrl = buildAgents.get(0).getUrl();
+        } else {
+            buildAgentUrl = buildResult.getBuildUrl();
+        }
+        return Collections.singletonMap("build-agent-url", buildAgentUrl);
+    }
+
+    private boolean releaseInProgress(int projectId, String releaseId) throws Exception {
+        return client.getListener(projectId, releaseId).getState() != 3;
+    }
+
     private Long getTaskId() {
         JSONObject params = getParams();
         return (Long) params.get(PARAMS_COMPOSITION_TASK_ID);
@@ -590,6 +700,8 @@ public class ContinuumWorker extends MaestroWorker {
             JSONObject outputData = getContext();
             outputData.put(CONTINUUM_PROJECT_ID, projectSummary.getId());
             setField(CONTINUUM_PROJECT_ID, projectSummary.getId());
+            outputData.put(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
+            setField(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
             setField(CONTEXT_OUTPUTS, outputData);
 
             writeOutput("Successfully Processed Maven Project Project\n");
@@ -631,6 +743,8 @@ public class ContinuumWorker extends MaestroWorker {
             JSONObject outputData = getContext();
             outputData.put(CONTINUUM_PROJECT_ID, projectSummary.getId());
             setField(CONTINUUM_PROJECT_ID, projectSummary.getId());
+            outputData.put(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
+            setField(CONTINUUM_PROJECT_GROUP_ID, projectGroup.getId());
             setField(CONTEXT_OUTPUTS, outputData);
 
         } catch (Exception e) {
@@ -785,6 +899,14 @@ public class ContinuumWorker extends MaestroWorker {
         return getNonNullField("goals");
     }
 
+    private String getPrepareGoals() {
+        return getField("prepare_goals");
+    }
+
+    private String getPerformGoals() {
+        return getField("perform_goals");
+    }
+
     private String getArguments() {
         return getNonNullField("arguments");
     }
@@ -824,6 +946,15 @@ public class ContinuumWorker extends MaestroWorker {
 
     private String getScmUrl() {
         return getField("scm_url");
+    }
+
+    private String getScmTag() {
+        return getField("scm_tag");
+    }
+
+    private boolean isUseReleaseProfile() {
+        String useReleaseProfile = getField("use_release_profile");
+        return useReleaseProfile != null && Boolean.parseBoolean(useReleaseProfile);
     }
 
     private String getScmUsername() {

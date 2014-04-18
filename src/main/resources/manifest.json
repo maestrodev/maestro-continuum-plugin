@@ -45,6 +45,40 @@
         "icon":"continuum.png"
       }
     },
+    {
+      "name" : "continuum release",
+      "description" : "Release a Continuum Project Group",
+      "author": "Brett Porter",
+      "version": "${project.version}-${buildNumber}",
+      "class": "com.maestrodev.maestrocontinuumplugin.ContinuumWorker",
+      "type":"java",
+      "dependencies":[
+        {
+          "name":"maestro-continuum-plugin-${project.version}.jar"
+        }
+      ],
+      "task":{
+        "command" : "/continuum/release",
+        "inputs" : {
+          "project_name" : {"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project To Build"},
+          "group_name":{"value" : "", "type" : "String", "required" : false, "description":"Name Of The Project Group"},
+          "prepare_goals":{"value" : "", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
+          "perform_goals":{"value" : "", "type" : "String", "required" : false, "description":"Space Seperated List Of Maven Goals"},
+          "arguments":{"value" : "", "type" : "String", "required" : false, "description":"Arguments To Pass To Maven"},
+          "scm_tag":{"value" : "", "type" : "String", "required" : false, "description":"SCM tag to use"},
+          "use_release_profile":{"value" : false, "type" : "Boolean", "required" : false, "description":"Enable the release profile when running the release"},
+          "host":{"value" : "", "type" : "String", "required" : true, "description":"Address Of The Continuum Build Server"},
+          "port":{"value" : 8080, "type" : "Integer", "required" : true, "description":"Port Of The Continuum Build Server"},
+          "username":{"value" : "", "type" : "String", "required" : true, "description":"User For Accessing Continuum"},
+          "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
+          "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
+          "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"}
+        },
+        "outputs" : {},
+        "tool_name":"Build",
+        "icon":"continuum.png"
+      }
+    },
     { 
       "name" : "continuum add shell project",
       "description" : "Add a shell project to a Continuum build server",
