@@ -890,11 +890,11 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private int getPort() {
-        return Integer.parseInt(getFields().get("port").toString());
+        return Integer.parseInt( getFields().get( "port" ).toString() );
     }
 
     private String getWebPath() {
-        return getField("web_path");
+        return getField( "web_path" );
     }
 
     private boolean isUseSsl() {
@@ -992,11 +992,11 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private String getPomPassword() {
-        return getField("pom_password");
+        return getField( "pom_password" );
     }
 
     private boolean isScmUseCache() {
-        return Boolean.parseBoolean(getField("scm_use_cache"));
+        return Boolean.parseBoolean( getField( "scm_use_cache" ) );
     }
 
     private String getScmBranch() {
@@ -1004,7 +1004,7 @@ public class ContinuumWorker extends MaestroWorker {
     }
 
     private String getPomUrl() {
-        return getField("pom_url");
+        return getField( "pom_url" );
     }
 
     private boolean isSingleDirectory() {
