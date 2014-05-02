@@ -16,7 +16,7 @@
 
 package com.maestrodev.maestrocontinuumplugin;
 
-import com.maestrodev.StompConnectionFactory;
+import com.maestrodev.maestro.plugins.StompConnectionFactory;
 import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
 import org.apache.maven.continuum.xmlrpc.project.AddingResult;

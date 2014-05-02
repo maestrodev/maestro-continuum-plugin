@@ -16,8 +16,8 @@
 
 package com.maestrodev.maestrocontinuumplugin;
 
-import com.maestrodev.MaestroWorker;
-import com.maestrodev.StompConnectionFactory;
+import com.maestrodev.maestro.plugins.MaestroWorker;
+import com.maestrodev.maestro.plugins.StompConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.continuum.xmlrpc.utils.BuildTrigger;
 import org.apache.maven.continuum.xmlrpc.client.ContinuumXmlRpcClient;
@@ -50,7 +50,8 @@ import java.util.logging.Logger;
 /**
  * Hello world!
  */
-public class ContinuumWorker extends MaestroWorker {
+public class ContinuumWorker extends MaestroWorker
+{
     private static Logger logger = Logger.getLogger(ContinuumWorker.class.getName());
 
     static final String DUPLICATE_PROJECT_ERR = "Trying to add duplicate projects in the same project group";
