@@ -290,6 +290,9 @@ public class ContinuumWorker extends MaestroWorker {
             String agentName = getAgentName(facts);
 
             String continuumBuildAgent = facts.get(FACT_CONTINUUM_BUILD_AGENT);
+            if ( continuumBuildAgent == null ) {
+                continuumBuildAgent = facts.get(FACT_IPADDRESS);
+            }
             writeOutput("Configuring Continuum Build Agent At " + continuumBuildAgent + "\n");
             BuildAgentConfiguration buildAgent = getBuildAgent(continuumBuildAgent);
 
@@ -484,7 +487,7 @@ public class ContinuumWorker extends MaestroWorker {
             String buildFile = getBuildFile();
 
             Profile profile = null;
-            if (getFact(FACT_CONTINUUM_BUILD_AGENT) != null) {
+            if (isMatchBuildAgents()) {
                 profile = setupBuildAgent();
             }
             Long taskId = getTaskId();
@@ -1008,5 +1011,9 @@ public class ContinuumWorker extends MaestroWorker {
 
     private boolean isSingleDirectory() {
         return Boolean.parseBoolean(getField("single_directory"));
+    }
+
+    private boolean isMatchBuildAgents() {
+        return Boolean.parseBoolean(getField("match_build_agents"));
     }
 }

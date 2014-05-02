@@ -11,7 +11,8 @@
             "web_path":"String",
             "use_ssl": "Boolean",
             "pom_username": "String",
-            "pom_password": "Password"
+            "pom_password": "Password",
+            "match_build_agents": "Boolean"
           }
         }],
   "tasks" : [{ 
@@ -40,6 +41,7 @@
           "password":{"value" : "", "type" : "Password", "required" : false, "description":"Password For Accessing Continuum"},
           "web_path":{"value" : "/continuum", "type" : "String", "required" : true, "description":"Context Path Of The Continuum Server"},
           "use_ssl":{"value" : false, "type" : "Boolean", "required" : true, "description":"Use SSL When Connecting To Continuum"},
+          "match_build_agents":{"value": true, "type": "Boolean", "required": true, "description":"Target builds to the same agent IP as the Maestro agent"},
           "force_build":{"value": false, "type": "Boolean", "required": false, "description": "Build If No Update Is Found"}
         },
         "outputs" : {},
