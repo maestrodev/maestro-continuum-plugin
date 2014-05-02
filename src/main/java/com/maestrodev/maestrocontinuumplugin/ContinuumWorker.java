@@ -99,21 +99,19 @@ public class ContinuumWorker extends MaestroWorker {
         if (!url.contains("http")) {
             url = "http://" + url + ":8181/continuum-buildagent/xmlrpc";
         }
-        List<BuildAgentConfiguration> buildAgents = client.getAllBuildAgents();
+        BuildAgentConfiguration buildAgent = client.getBuildAgent( url );
 
-        for (BuildAgentConfiguration buildAgent : buildAgents) {
-            if (buildAgent.getUrl().equals(url)) {
-                writeOutput("Making Sure Agent Is Enabled\n");
-                buildAgent.setEnabled(true);
-                client.updateBuildAgent(buildAgent);
-                if (!buildAgent.isEnabled()) {
-                    throw new Exception("Build Agent " + buildAgent.getUrl() + " Is Currently Not Enabled");
-                }
-                return buildAgent;
+        if ( buildAgent != null ) {
+            writeOutput("Making Sure Agent Is Enabled\n");
+            buildAgent.setEnabled(true);
+            client.updateBuildAgent(buildAgent);
+            if (!buildAgent.isEnabled()) {
+                throw new Exception("Build Agent " + buildAgent.getUrl() + " Is Currently Not Enabled");
             }
+            return buildAgent;
         }
 
-        writeOutput("Adding new Continuum build agent at " + url);
+        writeOutput("Adding new Continuum build agent at " + url + "\n");
         BuildAgentConfiguration buildAgentConfiguration = new BuildAgentConfiguration();
 
         buildAgentConfiguration.setDescription("Maestro Configured Build Agent (" + url + ")");
