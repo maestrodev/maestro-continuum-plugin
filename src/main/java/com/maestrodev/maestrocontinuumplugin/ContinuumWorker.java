@@ -304,9 +304,21 @@ public class ContinuumWorker extends MaestroWorker {
                 profile = createProfile(agentName, agentName);
             } else {
                 // verify build agent is in group
-                writeOutput("Build Environment Found, Verifying Agent\n");
+                writeOutput("Build Environment Found, Verifying Agent in group\n");
+
                 BuildAgentGroupConfiguration buildAgentGroupConfiguration =
                         client.getBuildAgentGroup(profile.getBuildAgentGroup());
+                if (buildAgentGroupConfiguration == null) {
+                    buildAgentGroupConfiguration = client.getBuildAgentGroup( agentName );
+                    if (buildAgentGroupConfiguration == null) {
+                        writeOutput("Creating build agent group " + agentName + "\n");
+                        buildAgentGroupConfiguration = createBuildAgentGroup(agentName, buildAgent);
+                    }
+                    writeOutput( "Applying build agent group " + agentName + " to environment " + profile.getName() + "\n" );
+                    profile.setBuildAgentGroup( agentName );
+                    client.updateProfile( profile );
+                }
+
                 boolean found = false;
 
                 for (BuildAgentConfiguration ba : buildAgentGroupConfiguration.getBuildAgents()) {
