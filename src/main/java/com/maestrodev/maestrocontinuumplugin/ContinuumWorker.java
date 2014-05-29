@@ -411,7 +411,7 @@ public class ContinuumWorker extends MaestroWorker
         if (runOptions != null) {
             return (String) runOptions.get("username");
         }
-        return null;
+        return "maestro";
     }
 
     private Schedule getMaestroSchedule() throws Exception {
